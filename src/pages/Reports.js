@@ -13,7 +13,6 @@ import {
   Button,
   Tabs,
   Tab,
-  Divider,
   Table,
   TableBody,
   TableCell,
@@ -33,22 +32,6 @@ import {
   People,
   AttachMoney,
 } from '@mui/icons-material';
-
-// Mock data for charts and reports
-const mockSalesData = [
-  { month: 'Jan', sales: 12500 },
-  { month: 'Feb', sales: 15000 },
-  { month: 'Mar', sales: 18000 },
-  { month: 'Apr', sales: 16500 },
-  { month: 'May', sales: 21000 },
-  { month: 'Jun', sales: 19500 },
-  { month: 'Jul', sales: 22500 },
-  { month: 'Aug', sales: 25000 },
-  { month: 'Sep', sales: 23000 },
-  { month: 'Oct', sales: 27000 },
-  { month: 'Nov', sales: 29500 },
-  { month: 'Dec', sales: 32000 },
-];
 
 const mockTopProducts = [
   { id: 1, name: 'Smartphone X', sales: 245, revenue: 24475.55, growth: 12.5 },

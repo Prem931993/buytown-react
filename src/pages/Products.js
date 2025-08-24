@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -12,10 +12,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Table,
   TableBody,
@@ -28,14 +24,12 @@ import {
   Chip,
   Snackbar,
   Alert,
-  CircularProgress,
-  Container,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Close as CloseIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
   CloudUpload as CloudUploadIcon,
@@ -45,16 +39,6 @@ import axios from 'axios';
 function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [openForm, setOpenForm] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-    status: 'active',
-  });
   const [categories, setCategories] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -79,10 +63,85 @@ function Products() {
     total: 0,
     totalPages: 0
   });
-  const [sortOptions, setSortOptions] = useState({
-    sort_by: 'id',
-    sort_order: 'asc'
-  });
+  
+  const fetchProducts = useCallback(async (isSearch = false) => {
+    try {
+      setLoading(true);
+      
+      // Prepare query parameters
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchQuery || undefined,
+        category_id: filters.category_id || undefined,
+        brand_id: filters.brand || undefined,
+      };
+      
+      // Remove undefined parameters
+      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+      
+      // Fetch products from API
+      const response = await axios.get('/products', { params });
+      console.log('Products API response:', response.data);
+      
+      // Set products and pagination data
+      setProducts(response.data.products || []);
+      setPagination(prevPagination => ({
+        ...prevPagination,
+        total: response.data.pagination?.totalCount || 0,
+        totalPages: response.data.pagination?.totalPages || 0,
+        hasNext: response.data.pagination?.hasNext || false,
+        hasPrev: response.data.pagination?.hasPrev || false,
+      }));
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load products',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination, searchQuery, filters.category_id, filters.brand]);
+  
+  // Separate function for initial data fetching to avoid dependency issues
+  const fetchInitialProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Prepare query parameters with default values for initial load
+      const params = {
+        page: 1,
+        limit: 10,
+      };
+      
+      // Fetch products from API
+      const response = await axios.get('/products', { params });
+      console.log('Initial products API response:', response.data);
+      
+      // Set products and pagination data
+      setProducts(response.data.products || []);
+      setPagination(prevPagination => ({
+        ...prevPagination,
+        page: 1,
+        limit: 10,
+        total: response.data.pagination?.totalCount || 0,
+        totalPages: response.data.pagination?.totalPages || 0,
+        hasNext: response.data.pagination?.hasNext || false,
+        hasPrev: response.data.pagination?.hasPrev || false,
+      }));
+    } catch (error) {
+      console.error('Error fetching initial products:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load products',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [setProducts, setPagination, setSnackbar, setLoading]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -105,7 +164,7 @@ function Products() {
         }
         
         // Fetch products with filters and pagination
-        await fetchProducts();
+        await fetchInitialProducts();
       } catch (error) {
         console.error('Error fetching initial data:', error);
         setSnackbar({
@@ -119,48 +178,7 @@ function Products() {
     };
     
     fetchData();
-  }, []);
-  
-  const fetchProducts = async (isSearch = false) => {
-    try {
-      setLoading(true);
-      
-      // Prepare query parameters
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-        search: searchQuery || undefined,
-        category_id: filters.category_id || undefined,
-        brand_id: filters.brand || undefined,
-      };
-      
-      // Remove undefined parameters
-      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
-      // Fetch products from API
-      const response = await axios.get('/products', { params });
-      console.log('Products API response:', response.data);
-      
-      // Set products and pagination data
-      setProducts(response.data.products || []);
-      setPagination({
-        ...pagination,
-        total: response.data.pagination?.totalCount || 0,
-        totalPages: response.data.pagination?.totalPages || 0,
-        hasNext: response.data.pagination?.hasNext || false,
-        hasPrev: response.data.pagination?.hasPrev || false,
-      });
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load products',
-        severity: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchInitialProducts]);
 
   // Navigation to detail page is now handled with react-router
   const navigate = useNavigate();
@@ -181,75 +199,6 @@ function Products() {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      // Validate form data
-      if (!formData.name || !formData.price || !formData.category) {
-        setSnackbar({
-          open: true,
-          message: 'Please fill all required fields',
-          severity: 'error',
-        });
-        return;
-      }
-
-      // In a real app, you would submit to your API
-      // const response = currentProduct
-      //   ? await axios.put(`/products/${currentProduct.id}`, formData)
-      //   : await axios.post('/products', formData);
-      
-      // Mock update for demonstration
-      if (currentProduct) {
-        const updatedProducts = products.map((p) =>
-          p.id === currentProduct.id
-            ? {
-                ...p,
-                ...formData,
-                price: parseFloat(formData.price),
-                stock: parseInt(formData.stock, 10),
-              }
-            : p
-        );
-        setProducts(updatedProducts);
-        setSnackbar({
-          open: true,
-          message: 'Product updated successfully',
-          severity: 'success',
-        });
-      } else {
-        const newProduct = {
-          id: products.length + 1,
-          ...formData,
-          price: parseFloat(formData.price),
-          stock: parseInt(formData.stock, 10),
-        };
-        setProducts([...products, newProduct]);
-        setSnackbar({
-          open: true,
-          message: 'Product added successfully',
-          severity: 'success',
-        });
-      }
-
-      // This function was removed as we're now using separate pages
-      // Keeping the code for reference
-    } catch (error) {
-      console.error('Error saving product:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to save product',
-        severity: 'error',
-      });
-    }
-  };
 
   const handleDelete = async (id) => {
     try {
@@ -623,122 +572,6 @@ function Products() {
           </Box>
         </>
       )}
-
-      {/* Product Form Dialog */}
-      {/* Dialog has been removed - using separate pages now */}
-      <Dialog open={openForm} onClose={() => {}} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {currentProduct ? 'Edit Product' : 'Add New Product'}
-          <IconButton
-            aria-label="close"
-            onClick={() => {}}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Product Name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                margin="normal"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  label="Category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                margin="normal"
-                InputProps={{ startAdornment: '₹' }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Stock Quantity"
-                name="stock"
-                type="number"
-                value={formData.stock}
-                onChange={handleInputChange}
-                required
-                margin="normal"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                multiline
-                rows={4}
-                margin="normal"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  label="Status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="out_of_stock">Out of Stock</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {}}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
-              },
-            }}
-          >
-            {currentProduct ? 'Update Product' : 'Add Product'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      {/* Product Form Dialog */}
-      {/* Dialog has been removed - using separate pages now */}
 
       <Snackbar
         open={snackbar.open}

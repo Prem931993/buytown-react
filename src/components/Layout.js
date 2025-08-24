@@ -42,8 +42,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
-const drawerWidth = 280;
-
 const menuItems = [
   { 
     text: 'Dashboard', 

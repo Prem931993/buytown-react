@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -24,7 +24,6 @@ import {
   Select,
   MenuItem,
   Grid,
-  Divider,
   Card,
   CardContent,
   Tabs,
@@ -382,6 +381,7 @@ function Orders() {
                     <TableCell align="right">
                       <IconButton
                         size="small"
+                        className= {selectedOrder}
                         onClick={() => handleViewOrderDetails(order)}
                         sx={{ color: 'primary.main' }}
                       >

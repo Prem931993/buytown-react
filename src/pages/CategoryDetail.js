@@ -17,8 +17,7 @@ import {
   CircularProgress,
   Container,
   Breadcrumbs,
-  Link,
-  Divider,
+  Link
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -120,10 +119,9 @@ function CategoryDetail() {
         // we don't need to send the image field
       }
       
-      let response;
       if (isEditMode) {
         // Update existing category
-        response = await axios.put(`/categories/${id}`, formDataToSend, {
+        await axios.put(`/categories/${id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -135,7 +133,7 @@ function CategoryDetail() {
         });
       } else {
         // Create new category
-        response = await axios.post('/categories', formDataToSend, {
+        await axios.post('/categories', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

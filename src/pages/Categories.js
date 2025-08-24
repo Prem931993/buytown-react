@@ -24,10 +24,6 @@ import {
   Snackbar,
   Alert,
   Collapse,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   MenuItem,
 } from '@mui/material';
 import {
@@ -44,9 +40,8 @@ import {
 import axios from 'axios';
 
 function Categories() {
-  const navigate = useNavigate();
+ useNavigate();
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
   const [isSubcategory, setIsSubcategory] = useState(false);
   const [parentCategory, setParentCategory] = useState(null);
@@ -83,7 +78,6 @@ function Categories() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         setSearchLoading(true);
         const response = await axios.get('/categories', {
           params: {
@@ -108,7 +102,6 @@ function Categories() {
           severity: 'error',
         });
       } finally {
-        setLoading(false);
         setSearchLoading(false);
       }
     };
@@ -205,17 +198,16 @@ function Categories() {
         formDataToSend.append('parent_id', parentCategory.id);
       }
       
-      let response;
       if (currentItem) {
         // Update existing category
-        response = await axios.put(`/categories/${currentItem.id}`, formDataToSend, {
+        await axios.put(`/categories/${currentItem.id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
         // Create new category
-        response = await axios.post('/categories', formDataToSend, {
+        await axios.post('/categories', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

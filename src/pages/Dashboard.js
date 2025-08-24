@@ -20,9 +20,6 @@ import {
   AttachMoney as RevenueIcon,
   ArrowForward,
   Refresh as RefreshIcon,
-  Add as AddIcon,
-  Assessment as ReportIcon,
-  Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';

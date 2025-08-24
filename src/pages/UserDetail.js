@@ -19,8 +19,7 @@ import {
   Breadcrumbs,
   Link,
   IconButton,
-  InputAdornment,
-  Divider,
+  InputAdornment
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -135,7 +134,6 @@ function UserDetail() {
 
       setLoading(true);
       
-      let response;
       if (isEditMode) {
         // Update existing user
         // Remove password if it's empty (user didn't change it)
@@ -144,7 +142,7 @@ function UserDetail() {
           delete updateData.password;
         }
         
-        response = await axios.post(`/auth/update-user/${id}`, updateData);
+        await axios.post(`/auth/update-user/${id}`, updateData);
         setSnackbar({
           open: true,
           message: 'User updated successfully',
@@ -152,7 +150,7 @@ function UserDetail() {
         });
       } else {
         // Create new user (register)
-        response = await axios.post('/auth/register', formData);
+        await axios.post('/auth/register', formData);
         setSnackbar({
           open: true,
           message: 'User added successfully',

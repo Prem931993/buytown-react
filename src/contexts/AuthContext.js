@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { log, warn, error } from '../utils/logger';
+import { error } from '../utils/logger';
 
 const AuthContext = createContext();
 
@@ -124,7 +124,6 @@ export const AuthProvider = ({ children }) => {
           
           // Set up axios defaults
           try {
-            const apiToken = await getApiToken();
             if (!isMounted) return;
             
             axios.defaults.baseURL = API_BASE_URL;
@@ -156,7 +155,7 @@ export const AuthProvider = ({ children }) => {
     
     checkAuthStatus();
     return () => { isMounted = false; };
-  }, []);
+  }, [isAuthenticated]);
 
   // Handle token expiration and regeneration on demand
   const ensureApiToken = async () => {
@@ -211,10 +210,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      // Get the current API token
-      const token = await ensureApiToken();
-      
+    try {      
       // Make a request to the backend to invalidate the session
       await axios.post('/auth/logout', {}, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }

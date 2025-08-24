@@ -12,7 +12,6 @@ import {
   Select,
   MenuItem,
   Paper,
-  Divider,
   Snackbar,
   Alert,
   CircularProgress,
@@ -22,18 +21,14 @@ import {
   IconButton,
   FormControlLabel,
   Checkbox,
-  Chip,
-  Autocomplete,
   Grid,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   ArrowBack as ArrowBackIcon,
   Delete as DeleteIcon,
-  Add as AddIcon,
   Remove as RemoveIcon,
   CloudUpload as CloudUploadIcon,
-  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -44,7 +39,6 @@ function ProductDetail() {
   
   const [loading, setLoading] = useState(isEditMode);
   const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [variations, setVariations] = useState([]);
   const [productImages, setProductImages] = useState([]);
@@ -77,7 +71,6 @@ function ProductDetail() {
   });
   
   // State for parent-child relationships
-  const [childProducts, setChildProducts] = useState([]); // For parent products
   const [allProducts, setAllProducts] = useState([]); // All products for selection
   const [selectedChildProducts, setSelectedChildProducts] = useState([]); // Selected child products for parent
   const [snackbar, setSnackbar] = useState({
@@ -299,10 +292,9 @@ function ProductDetail() {
         });
       }
 
-      let response;
       if (isEditMode) {
         // Update existing product
-        response = await axios.put(`/products/${id}`, formDataObj, {
+        await axios.put(`/products/${id}`, formDataObj, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -316,7 +308,7 @@ function ProductDetail() {
         });
       } else {
         // Create new product
-        response = await axios.post('/products', formDataObj, {
+        await axios.post('/products', formDataObj, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -687,6 +679,23 @@ function ProductDetail() {
                         {brands.map((brand) => (
                           <MenuItem key={brand.id} value={brand.id}>
                             {brand.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Variation</InputLabel>
+                      <Select
+                        label="Variation"
+                        name="variation_id"
+                        value={formData.variation_id}
+                        onChange={handleInputChange}
+                      >
+                        <MenuItem value="">Select Variation</MenuItem>
+                        {variations.map((variation) => (
+                          <MenuItem key={variation.id} value={variation.id}>
+                            {variation.name}
                           </MenuItem>
                         ))}
                       </Select>

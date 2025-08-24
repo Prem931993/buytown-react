@@ -8,10 +8,6 @@ import {
   Card,
   CardContent,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Table,
   TableBody,
@@ -29,33 +25,23 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip,
-  Divider,
-  Switch,
-  FormControlLabel,
+  Tooltip
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Close as CloseIcon,
   Search as SearchIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  LocationOn as LocationIcon,
   Person as PersonIcon,
-  VpnKey as VpnKeyIcon,
   AdminPanelSettings as AdminIcon,
   ShoppingBag as CustomerIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 
 function Users() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   // Removed form state as it's now handled in UserDetail page
   const [filterRole, setFilterRole] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,8 +132,6 @@ function Users() {
           message: 'Failed to load users',
           severity: 'error',
         });
-      } finally {
-        setLoading(false);
       }
     };
     
@@ -227,19 +211,6 @@ function Users() {
     
     return true;
   });
-
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'admin':
-        return <AdminIcon sx={{ color: 'error.main' }} />;
-      case 'manager':
-        return <AdminIcon sx={{ color: 'warning.main' }} />;
-      case 'customer':
-        return <CustomerIcon sx={{ color: 'info.main' }} />;
-      default:
-        return <PersonIcon />;
-    }
-  };
 
   const getRoleChip = (role) => {
     switch (role) {

@@ -20,10 +20,8 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   Snackbar,
-  Alert,
-  MenuItem,
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,9 +33,8 @@ import {
 import axios from 'axios';
 
 function Variations() {
-  const navigate = useNavigate();
+  useNavigate();
   const [variations, setVariations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [formData, setFormData] = useState({
@@ -69,7 +66,6 @@ function Variations() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         setSearchLoading(true);
         const response = await axios.get('/variations', {
           params: {
@@ -92,7 +88,6 @@ function Variations() {
           severity: 'error',
         });
       } finally {
-        setLoading(false);
         setSearchLoading(false);
       }
     };
@@ -136,13 +131,12 @@ function Variations() {
         value: formData.value,
       };
       
-      let response;
       if (currentItem) {
         // Update existing variation
-        response = await axios.put(`/variations/${currentItem.id}`, variationData);
+        await axios.put(`/variations/${currentItem.id}`, variationData);
       } else {
         // Create new variation
-        response = await axios.post('/variations', variationData);
+        await axios.post('/variations', variationData);
       }
       
       setSnackbar({

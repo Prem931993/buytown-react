@@ -18,9 +18,7 @@ import {
   Container,
   Breadcrumbs,
   Link,
-  IconButton,
-  Chip,
-  Autocomplete,
+  IconButton
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -200,10 +198,9 @@ function ParentProductForm() {
         });
       }
 
-      let response;
       if (isEditMode) {
         // Update existing product
-        response = await axios.put(`/products/${id}`, formDataObj, {
+        await axios.put(`/products/${id}`, formDataObj, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -217,7 +214,7 @@ function ParentProductForm() {
         });
       } else {
         // Create new product
-        response = await axios.post('/products', formDataObj, {
+        await axios.post('/products', formDataObj, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

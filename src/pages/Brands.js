@@ -20,10 +20,8 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   Snackbar,
-  Alert,
-  MenuItem,
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,9 +33,8 @@ import {
 import axios from 'axios';
 
 function Brands() {
-  const navigate = useNavigate();
+  useNavigate();
   const [brands, setBrands] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [formData, setFormData] = useState({
@@ -70,7 +67,6 @@ function Brands() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         setSearchLoading(true);
         const response = await axios.get('/brands', {
           params: {
@@ -93,7 +89,6 @@ function Brands() {
           severity: 'error',
         });
       } finally {
-        setLoading(false);
         setSearchLoading(false);
       }
     };
@@ -142,17 +137,16 @@ function Brands() {
         formDataToSend.append('image', formData.image);
       }
       
-      let response;
       if (currentItem) {
         // Update existing brand
-        response = await axios.put(`/brands/${currentItem.id}`, formDataToSend, {
+        await axios.put(`/brands/${currentItem.id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
         // Create new brand
-        response = await axios.post('/brands', formDataToSend, {
+        await axios.post('/brands', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
