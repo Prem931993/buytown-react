@@ -22,6 +22,8 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import Brands from './pages/Brands';
 import Variations from './pages/Variations';
 import Layout from './components/Layout';
+import BannerUpload from './pages/BannerUpload';
+import GeneralSettings from './pages/GeneralSettings';
 
 const theme = createTheme({
   palette: {
@@ -208,6 +210,8 @@ function App() {
               <Route path="payment" element={<PlaceholderPage />} />
               <Route path="sms" element={<PlaceholderPage />} />
               <Route path="email" element={<PlaceholderPage />} />
+              <Route path="general/settings" element={<GeneralSettings />} />
+              <Route path="general/banner-upload" element={<BannerUpload />} />
             </Route>
           </Routes>
         </Router>

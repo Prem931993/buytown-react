@@ -16,9 +16,9 @@ const API_TOKEN_KEY = 'api_token';
 const API_TOKEN_EXPIRY_KEY = 'api_token_expiry';
 const API_TOKEN_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api/v1';
-const API_CLIENT_ID = process.env.REACT_APP_API_CLIENT_ID || 'buytownapiadmin';
-const API_CLIENT_SECRET = process.env.REACT_APP_API_CLIENT_SECRET || 'C7l@i46HuQec';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_CLIENT_ID = process.env.REACT_APP_API_CLIENT_ID;
+const API_CLIENT_SECRET = process.env.REACT_APP_API_CLIENT_SECRET;
 
 async function getApiToken() {
   const now = Date.now();

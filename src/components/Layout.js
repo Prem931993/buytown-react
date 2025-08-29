@@ -121,6 +121,16 @@ const menuItems = [
     path: '/email',
     badge: null
   },
+  {
+    text: 'General',
+    icon: <Settings />,
+    path: '/general',
+    badge: null,
+    children: [
+      { text: 'Settings', path: '/general/settings' },
+      { text: 'Banner Upload', path: '/general/banner-upload' }
+    ]
+  },
 ];
 
 function Layout() {
@@ -216,51 +226,92 @@ function Layout() {
       {/* Navigation */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <List sx={{ px: 2, py: 1 }}>
-          {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  setMobileOpen(false);
-                }}
-                sx={{
-                  borderRadius: 2,
-                  justifyContent: drawerCollapsed ? 'center' : 'flex-start',
-                  '&.Mui-selected': {
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    },
-                  },
-                  '&:hover': {
-                    background: 'rgba(99, 102, 241, 0.08)',
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: location.pathname === item.path ? 'white' : 'inherit',
-                    minWidth: drawerCollapsed ? 0 : 40,
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                {!drawerCollapsed && (
-                  <ListItemText 
-                    primary={item.text}
-                    primaryTypographyProps={{
-                      fontWeight: location.pathname === item.path ? 600 : 500,
+          {menuItems.map((item) => {
+            const hasChildren = item.children && item.children.length > 0;
+            const isConfigurationActive = location.pathname.startsWith('/configuration');
+            
+            return (
+              <React.Fragment key={item.text}>
+                <ListItem disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    selected={location.pathname === item.path || (hasChildren && isConfigurationActive)}
+                    onClick={() => {
+                      if (!hasChildren) {
+                        navigate(item.path);
+                        setMobileOpen(false);
+                      }
                     }}
-                  />
+                    sx={{
+                      borderRadius: 2,
+                      justifyContent: drawerCollapsed ? 'center' : 'flex-start',
+                      '&.Mui-selected': {
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        color: 'white',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        },
+                      },
+                      '&:hover': {
+                        background: 'rgba(99, 102, 241, 0.08)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        color: (location.pathname === item.path || (hasChildren && isConfigurationActive)) ? 'white' : 'inherit',
+                        minWidth: drawerCollapsed ? 0 : 40,
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    {!drawerCollapsed && (
+                      <ListItemText
+                        primary={item.text}
+                        primaryTypographyProps={{
+                          fontWeight: (location.pathname === item.path || (hasChildren && isConfigurationActive)) ? 600 : 500,
+                        }}
+                      />
+                    )}
+                    {!drawerCollapsed && item.badge && (
+                      <Badge badgeContent={item.badge} color="error" />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+                
+                {/* Render children items */}
+                {hasChildren && !drawerCollapsed && (
+                  <List component="div" disablePadding sx={{ pl: 4 }}>
+                    {item.children.map((child) => (
+                      <ListItem key={child.text} disablePadding sx={{ mb: 0.5 }}>
+                        <ListItemButton
+                          selected={location.pathname === child.path}
+                          onClick={() => {
+                            navigate(child.path);
+                            setMobileOpen(false);
+                          }}
+                          sx={{
+                            borderRadius: 2,
+                            '&.Mui-selected': {
+                              background: 'rgba(99, 102, 241, 0.1)',
+                              color: '#6366f1',
+                            },
+                          }}
+                        >
+                          <ListItemText
+                            primary={child.text}
+                            primaryTypographyProps={{
+                              fontSize: '0.875rem',
+                              fontWeight: location.pathname === child.path ? 600 : 400,
+                            }}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
                 )}
-                {!drawerCollapsed && item.badge && (
-                  <Badge badgeContent={item.badge} color="error" />
-                )}
-              </ListItemButton>
-            </ListItem>
-          ))}
+              </React.Fragment>
+            );
+          })}
         </List>
       </Box>
 
@@ -338,7 +389,9 @@ function Layout() {
                location.pathname === '/products' ? 'Products Management' :
                location.pathname === '/users' ? 'Users Management' :
                location.pathname === '/orders' ? 'Orders Management' :
-               location.pathname === '/reports' ? 'Reports & Analytics' : 'Admin Panel'}
+               location.pathname === '/reports' ? 'Reports & Analytics' :
+               location.pathname === '/general/settings' ? 'General Settings' :
+               location.pathname === '/general/banner-upload' ? 'Banner Upload' : 'Admin Panel'}
             </Typography>
           </Box>
 
