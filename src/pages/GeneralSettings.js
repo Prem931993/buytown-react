@@ -21,7 +21,6 @@ import axios from 'axios';
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
-  Edit as EditIcon,
 } from '@mui/icons-material';
 import { logoService } from '../services/logoService';
 
@@ -39,7 +38,6 @@ const GeneralSettings = () => {
   const [logos, setLogos] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [loading, setLoading] = useState(false);
-  const [editingLogo, setEditingLogo] = useState(null);
   const [newLogo, setNewLogo] = useState(null);
 
   const showSnackbar = (message, severity) => {
@@ -311,15 +309,6 @@ const GeneralSettings = () => {
                             secondary={`Path: ${logo.file_path}`}
                           />
                           <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
-                              aria-label="edit"
-                              onClick={() => setEditingLogo(logo)}
-                              disabled={loading}
-                              sx={{ mr: 1 }}
-                            >
-                              <EditIcon />
-                            </IconButton>
                             <IconButton 
                               edge="end" 
                               aria-label="delete"
