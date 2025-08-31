@@ -82,8 +82,7 @@ function Products() {
       
       // Fetch products from API
       const response = await axios.get('/products', { params });
-      console.log('Products API response:', response.data);
-      
+
       // Set products and pagination data
       setProducts(response.data.products || []);
       setPagination(prevPagination => ({
@@ -118,8 +117,7 @@ function Products() {
       
       // Fetch products from API
       const response = await axios.get('/products', { params });
-      console.log('Initial products API response:', response.data);
-      
+
       // Set products and pagination data
       setProducts(response.data.products || []);
       setPagination(prevPagination => ({
@@ -189,12 +187,9 @@ function Products() {
   
   const handleEditProduct = (product) => {
     // If this is a parent product, navigate to the parent product form
-    console.log('Editing product:', product);
     if (product.product_type === 'parent') {
-      console.log('Navigating to parent product form for product ID:', product.id);
       navigate(`/parent-products/${product.id}`);
     } else {
-      console.log('Navigating to product detail for product ID:', product.id);
       navigate(`/products/edit/${product.id}`);
     }
   };
@@ -525,7 +520,6 @@ function Products() {
                           size="small"
                           color="primary"
                           onClick={() => {
-                            console.log('Edit button clicked for product:', product);
                             handleEditProduct(product);
                           }}
                         >

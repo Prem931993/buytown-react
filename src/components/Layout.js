@@ -390,6 +390,7 @@ function Layout() {
                location.pathname === '/users' ? 'Users Management' :
                location.pathname === '/orders' ? 'Orders Management' :
                location.pathname === '/reports' ? 'Reports & Analytics' :
+               location.pathname === '/sms' ? 'SMS Configuration & OTP Management' :
                location.pathname === '/general/settings' ? 'General Settings' :
                location.pathname === '/general/banner-upload' ? 'Banner Upload' : 'Admin Panel'}
             </Typography>

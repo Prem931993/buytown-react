@@ -34,15 +34,24 @@ function UserDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
-  
+
   const [loading, setLoading] = useState(isEditMode);
   const [formData, setFormData] = useState({
-    name: '',
+    firstname: '',
+    lastname: '',
     email: '',
-    phone: '',
+    phone_no: '',
     password: '',
-    role: 'user',
+    address: '',
+    gstin: '',
+    profile_photo: null,
+    license: null,
     status: 'active',
+    role: 'user',
+  });
+  const [filePreviews, setFilePreviews] = useState({
+    profile_photo: null,
+    license: null,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -58,31 +67,40 @@ function UserDetail() {
           setLoading(true);
           // In a real implementation, this would be a GET request
           // Using POST here to match the backend API pattern
-          const response = await axios.post(`/auth/user/${id}`);
-          const userData = response.data.user;
-          
+          const response = await axios.get(`/users/${id}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const userData = response.data;
+
           setFormData({
-            name: userData.name || '',
+            firstname: userData.firstname || '',
+            lastname: userData.lastname || '',
             email: userData.email || '',
-            phone: userData.phone || '',
+            phone_no: userData.phone_no || '',
             password: '', // Don't populate password for security reasons
-            role: userData.role || 'user',
-            status: userData.status || 'active',
+            address: userData.address || '',
+            gstin: userData.gstin || '',
+            profile_photo: userData.profile_photo || null,
+            license: userData.license || null,
+            role: userData.role_id ? roleIdToRole(userData.role_id) : 'user',
+            status: userData.status ? statusBoolToString(userData.status) : 'active',
           });
         } catch (error) {
-          console.error('Error fetching user details:', error);
           setSnackbar({
             open: true,
             message: 'Failed to load user details',
             severity: 'error',
           });
-          
+
           // Mock data for demonstration if API fails
           if (process.env.NODE_ENV === 'development') {
             setFormData({
-              name: 'John Doe',
+              firstname: 'John',
+              lastname: 'Doe',
               email: 'john.doe@example.com',
-              phone: '1234567890',
+              phone_no: '1234567890',
               password: '',
               role: 'user',
               status: 'active',
@@ -93,9 +111,56 @@ function UserDetail() {
         }
       }
     };
-    
+
     fetchData();
   }, [id, isEditMode]);
+
+  // Helper functions to convert role_id and status to string values
+  const roleIdToRole = (role_id) => {
+    switch (role_id) {
+      case 1:
+        return 'admin';
+      case 3:
+        return 'user';
+      case 4:
+        return 'delivery_person';
+      default:
+        return 'user';
+    }
+  };
+
+  const statusBoolToString = (status) => {
+    if (typeof status === 'boolean') {
+      return status ? 'active' : 'inactive';
+    }
+    return status;
+  };
+
+  const roleToRoleId = (role) => {
+    switch (role) {
+      case 'admin':
+        return 1;
+      case 'user':
+        return 3;
+      case 'delivery_person':
+        return 4;
+      default:
+        return 3;
+    }
+  };
+
+  const statusStringToBool = (status) => {
+    switch (status) {
+      case 'active':
+        return true;
+      case 'inactive':
+        return false;
+      case 'suspended':
+        return false; // You might want to handle suspended differently
+      default:
+        return true;
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -105,6 +170,58 @@ function UserDetail() {
     });
   };
 
+  const handleFileChange = (fieldName) => (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file size (5MB for profile photos, 10MB for licenses)
+      const maxSize = fieldName === 'profile_photo' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setSnackbar({
+          open: true,
+          message: `File size too large. Maximum size is ${fieldName === 'profile_photo' ? '5MB' : '10MB'}`,
+          severity: 'error',
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = fieldName === 'profile_photo'
+        ? ['image/jpeg', 'image/jpg', 'image/png']
+        : ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+
+      if (!allowedTypes.includes(file.type)) {
+        setSnackbar({
+          open: true,
+          message: `Invalid file type. ${fieldName === 'profile_photo' ? 'Only JPEG, JPG, PNG allowed' : 'Only JPEG, JPG, PNG, PDF allowed'}`,
+          severity: 'error',
+        });
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        [fieldName]: file,
+      });
+
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreviews({
+            ...filePreviews,
+            [fieldName]: e.target.result,
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreviews({
+          ...filePreviews,
+          [fieldName]: null,
+        });
+      }
+    }
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -112,10 +229,20 @@ function UserDetail() {
   const handleSubmit = async () => {
     try {
       // Validate form data
-      if (!formData.name || !formData.email || (!isEditMode && !formData.password)) {
+      if (!formData.email && !formData.phone_no) {
         setSnackbar({
           open: true,
-          message: 'Please fill all required fields',
+          message: 'Please provide either email or phone number',
+          severity: 'error',
+        });
+        return;
+      }
+
+      // Password is required for admin role on creation
+      if (!isEditMode && !formData.password && formData.role === 'admin') {
+        setSnackbar({
+          open: true,
+          message: 'Password is required for admin role',
           severity: 'error',
         });
         return;
@@ -123,7 +250,7 @@ function UserDetail() {
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
+      if (formData.email && !emailRegex.test(formData.email)) {
         setSnackbar({
           open: true,
           message: 'Please enter a valid email address',
@@ -133,7 +260,7 @@ function UserDetail() {
       }
 
       setLoading(true);
-      
+
       if (isEditMode) {
         // Update existing user
         // Remove password if it's empty (user didn't change it)
@@ -141,8 +268,46 @@ function UserDetail() {
         if (!updateData.password) {
           delete updateData.password;
         }
-        
-        await axios.post(`/auth/update-user/${id}`, updateData);
+
+        // Convert role and status to database format
+        updateData.role_id = roleToRoleId(updateData.role);
+        updateData.status = statusStringToBool(updateData.status);
+        delete updateData.role; // Remove the string role field
+
+        // Check if we have files to upload
+        const hasFiles = updateData.profile_photo instanceof File || updateData.license instanceof File;
+
+        if (hasFiles) {
+          // Use FormData for file uploads
+          const formDataToSend = new FormData();
+          for (const key in updateData) {
+            if (updateData[key] !== null && updateData[key] !== undefined && updateData[key] !== '') {
+              if (key === 'profile_photo' || key === 'license') {
+                if (updateData[key] instanceof File) {
+                  formDataToSend.append(key, updateData[key], updateData[key].name);
+                }
+              } else {
+                formDataToSend.append(key, updateData[key]);
+              }
+            }
+          }
+
+          await axios.put(`/users/${id}`, formDataToSend, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+        } else {
+          // No files, send as JSON
+          await axios.put(`/users/${id}`, updateData, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+        }
+
         setSnackbar({
           open: true,
           message: 'User updated successfully',
@@ -150,20 +315,36 @@ function UserDetail() {
         });
       } else {
         // Create new user (register)
-        await axios.post('/auth/register', formData);
+        // Prepare form data for submission
+        const submitData = new FormData();
+        for (const key in formData) {
+          if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+            if (key === 'profile_photo' || key === 'license') {
+              submitData.append(key, formData[key], formData[key].name);
+            } else {
+              submitData.append(key, formData[key]);
+            }
+          }
+        }
+
+        await axios.post('/users', submitData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
         setSnackbar({
           open: true,
           message: 'User added successfully',
           severity: 'success',
         });
-        
+
         // Redirect to the user list after a short delay
         setTimeout(() => {
           navigate('/users');
         }, 1500);
       }
     } catch (error) {
-      console.error('Error saving user:', error);
       setSnackbar({
         open: true,
         message: error.response?.data?.error || 'Failed to save user',
@@ -178,23 +359,32 @@ function UserDetail() {
     if (!window.confirm('Are you sure you want to delete this user?')) {
       return;
     }
-    
+
     try {
       setLoading(true);
-      await axios.post(`/auth/delete-user/${id}`);
-      
+
+      // Fix: Use a more robust approach to construct the API URL
+      // If axios.defaults.baseURL is not set, use a default value
+      const baseUrl = axios.defaults.baseURL;
+      const deleteUrl = `${baseUrl}/users/${id}`;
+
+      const response = await axios.delete(deleteUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
       setSnackbar({
         open: true,
         message: 'User deleted successfully',
         severity: 'success',
       });
-      
+
       // Redirect to the user list after a short delay
       setTimeout(() => {
         navigate('/users');
       }, 1500);
     } catch (error) {
-      console.error('Error deleting user:', error);
       setSnackbar({
         open: true,
         message: error.response?.data?.error || 'Failed to delete user',
@@ -274,18 +464,30 @@ function UserDetail() {
           <Card>
             <CardContent>
               <Grid container spacing={3}>
+                {/* First Name and Last Name in single row */}
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Full Name"
-                    name="name"
-                    value={formData.name}
+                    label="First Name"
+                    name="firstname"
+                    value={formData.firstname}
                     onChange={handleInputChange}
-                    required
                     margin="normal"
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Last Name"
+                    name="lastname"
+                    value={formData.lastname}
+                    onChange={handleInputChange}
+                    margin="normal"
+                  />
+                </Grid>
+
+                {/* Email separate */}
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Email Address"
@@ -293,21 +495,24 @@ function UserDetail() {
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    required
                     margin="normal"
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+
+                {/* Phone separate */}
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Phone Number"
-                    name="phone"
-                    value={formData.phone}
+                    name="phone_no"
+                    value={formData.phone_no}
                     onChange={handleInputChange}
                     margin="normal"
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+
+                {/* Password */}
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label={isEditMode ? "New Password (leave blank to keep current)" : "Password"}
@@ -332,6 +537,34 @@ function UserDetail() {
                     }}
                   />
                 </Grid>
+
+                {/* Address separate */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    multiline
+                    rows={3}
+                  />
+                </Grid>
+
+                {/* GSTIN separate */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="GSTIN Number"
+                    name="gstin"
+                    value={formData.gstin}
+                    onChange={handleInputChange}
+                    margin="normal"
+                  />
+                </Grid>
+
+                {/* Role and Status in single row */}
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth margin="normal">
                     <InputLabel>Role</InputLabel>
@@ -342,8 +575,8 @@ function UserDetail() {
                       onChange={handleInputChange}
                     >
                       <MenuItem value="admin">Admin</MenuItem>
-                      <MenuItem value="manager">Manager</MenuItem>
                       <MenuItem value="user">User</MenuItem>
+                      <MenuItem value="delivery_person">Delivery Person</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -362,6 +595,175 @@ function UserDetail() {
                     </Select>
                   </FormControl>
                 </Grid>
+
+                {/* Profile Photo Upload - Full width */}
+                <Grid item xs={12}>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Profile Photo
+                    </Typography>
+                    <input
+                      accept="image/jpeg,image/jpg,image/png"
+                      style={{ display: 'none' }}
+                      id="profile-photo-upload"
+                      type="file"
+                      onChange={handleFileChange('profile_photo')}
+                    />
+                    <label htmlFor="profile-photo-upload">
+                      <Button
+                        variant="outlined"
+                        component="span"
+                        fullWidth
+                        sx={{
+                          py: 2,
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                          '&:hover': {
+                            backgroundColor: 'primary.light',
+                            borderColor: 'primary.dark',
+                          }
+                        }}
+                      >
+                        {formData.profile_photo instanceof File
+                          ? formData.profile_photo.name
+                          : (formData.profile_photo ? 'Change Profile Photo' : 'Select Profile Photo')
+                        }
+                      </Button>
+                    </label>
+
+                    {/* Display existing profile photo or preview */}
+                    {(filePreviews.profile_photo || (formData.profile_photo && !(formData.profile_photo instanceof File))) && (
+                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <img
+                          src={filePreviews.profile_photo ||
+                                (formData.profile_photo && !(formData.profile_photo instanceof File)
+                                  ? (formData.profile_photo.startsWith('http')
+                                      ? formData.profile_photo
+                                      : (() => {
+                                          // Construct base URL without /api/v1 for static files
+                                          const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                          const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
+                                          return `${baseWithoutApi}/uploads/${formData.profile_photo}`;
+                                        })())
+                                  : null)}
+                          alt="Profile Photo"
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: 200,
+                            borderRadius: 8,
+                            border: '1px solid #ddd',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    <Typography variant="caption" color="text.secondary">
+                      Max 5MB. JPEG, JPG, PNG only.
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {/* License Upload - Only for delivery_person role - Full width */}
+                {formData.role === 'delivery_person' && (
+                  <Grid item xs={12}>
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        License Document *
+                      </Typography>
+                      <input
+                        accept="image/jpeg,image/jpg,image/png,application/pdf"
+                        style={{ display: 'none' }}
+                        id="license-upload"
+                        type="file"
+                        onChange={handleFileChange('license')}
+                      />
+                      <label htmlFor="license-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          fullWidth
+                          sx={{
+                            py: 2,
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                            '&:hover': {
+                              backgroundColor: 'primary.light',
+                              borderColor: 'primary.dark',
+                            }
+                          }}
+                        >
+                          {formData.license instanceof File
+                            ? formData.license.name
+                            : (formData.license ? 'Change License Document' : 'Select License Document')
+                          }
+                        </Button>
+                      </label>
+
+                      {/* Display existing license or preview */}
+                      {(filePreviews.license || (formData.license && !(formData.license instanceof File))) && (
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                          {formData.license && !(formData.license instanceof File) && formData.license.toLowerCase().endsWith('.pdf') ? (
+                            <Box sx={{
+                              p: 2,
+                              border: '1px solid #ddd',
+                              borderRadius: 1,
+                              backgroundColor: '#f5f5f5'
+                            }}>
+                              <Typography variant="body2" color="text.secondary">
+                                📄 PDF Document: {formData.license}
+                              </Typography>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                sx={{ mt: 1 }}
+                                onClick={() => {
+                                  const url = formData.license.startsWith('http')
+                                    ? formData.license
+                                    : (() => {
+                                        // Construct base URL without /api/v1 for static files
+                                        const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                        const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
+                                        return `${baseWithoutApi}/uploads/${formData.license}`;
+                                      })();
+                                  window.open(url, '_blank');
+                                }}
+                              >
+                                View PDF
+                              </Button>
+                            </Box>
+                          ) : (
+                            <img
+                              src={filePreviews.license ||
+                                    (formData.license && !(formData.license instanceof File)
+                                      ? (formData.license.startsWith('http')
+                                          ? formData.license
+                                          : (() => {
+                                              // Construct base URL without /api/v1 for static files
+                                              const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                              const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
+                                              return `${baseWithoutApi}/uploads/${formData.license}`;
+                                            })())
+                                      : null)}
+                              alt="License Document"
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: 200,
+                                borderRadius: 8,
+                                border: '1px solid #ddd',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          )}
+                        </Box>
+                      )}
+
+                      <Typography variant="caption" color="text.secondary">
+                        Max 10MB. JPEG, JPG, PNG, PDF allowed.
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
               </Grid>
             </CardContent>
           </Card>

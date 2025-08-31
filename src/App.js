@@ -24,6 +24,7 @@ import Variations from './pages/Variations';
 import Layout from './components/Layout';
 import BannerUpload from './pages/BannerUpload';
 import GeneralSettings from './pages/GeneralSettings';
+import SMSConfiguration from './pages/SMSConfiguration';
 
 const theme = createTheme({
   palette: {
@@ -160,7 +161,6 @@ const theme = createTheme({
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  console.log('PrivateRoute - isAuthenticated:', isAuthenticated, 'loading:', loading);
   
   // Don't redirect while still loading
   if (loading) {
@@ -169,9 +169,7 @@ const PrivateRoute = ({ children }) => {
   
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
-console.log('App.js loaded');
 function App() {
-  console.log('App component rendered');
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -208,7 +206,7 @@ function App() {
               <Route path="delivery" element={<PlaceholderPage />} />
               <Route path="tax" element={<PlaceholderPage />} />
               <Route path="payment" element={<PlaceholderPage />} />
-              <Route path="sms" element={<PlaceholderPage />} />
+              <Route path="sms" element={<SMSConfiguration />} />
               <Route path="email" element={<PlaceholderPage />} />
               <Route path="general/settings" element={<GeneralSettings />} />
               <Route path="general/banner-upload" element={<BannerUpload />} />

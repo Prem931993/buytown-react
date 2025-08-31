@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -54,77 +55,12 @@ function Users() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // In a real app, you would fetch from your API
-        // const response = await axios.get('/users');
-        // setUsers(response.data);
-        
-        // Mock data for demonstration
-        setUsers([
-          {
-            id: 1,
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john.doe@example.com',
-            phone: '+1 (555) 123-4567',
-            role: 'admin',
-            status: 'active',
-            address: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA',
-            createdAt: '2023-01-15T08:30:00Z',
-            lastLogin: '2023-06-10T14:45:00Z',
-          },
-          {
-            id: 2,
-            firstName: 'Jane',
-            lastName: 'Smith',
-            email: 'jane.smith@example.com',
-            phone: '+1 (555) 987-6543',
-            role: 'customer',
-            status: 'active',
-            address: '456 Oak Ave',
-            city: 'Los Angeles',
-            state: 'CA',
-            zipCode: '90001',
-            country: 'USA',
-            createdAt: '2023-02-20T10:15:00Z',
-            lastLogin: '2023-06-08T09:30:00Z',
-          },
-          {
-            id: 3,
-            firstName: 'Robert',
-            lastName: 'Johnson',
-            email: 'robert.johnson@example.com',
-            phone: '+1 (555) 456-7890',
-            role: 'manager',
-            status: 'inactive',
-            address: '789 Pine Blvd',
-            city: 'Chicago',
-            state: 'IL',
-            zipCode: '60007',
-            country: 'USA',
-            createdAt: '2023-03-05T15:45:00Z',
-            lastLogin: '2023-05-20T11:20:00Z',
-          },
-          {
-            id: 4,
-            firstName: 'Emily',
-            lastName: 'Davis',
-            email: 'emily.davis@example.com',
-            phone: '+1 (555) 234-5678',
-            role: 'customer',
-            status: 'active',
-            address: '321 Maple Dr',
-            city: 'Houston',
-            state: 'TX',
-            zipCode: '77001',
-            country: 'USA',
-            createdAt: '2023-04-12T09:00:00Z',
-            lastLogin: '2023-06-09T16:15:00Z',
-          },
-        ]);
+        const response = await axios.get('/users', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
         setSnackbar({
@@ -132,9 +68,63 @@ function Users() {
           message: 'Failed to load users',
           severity: 'error',
         });
+
+        // Fallback to mock data for demonstration if API fails
+        if (process.env.NODE_ENV === 'development') {
+          setUsers([
+            {
+              id: 1,
+              firstname: 'John',
+              lastname: 'Doe',
+              email: 'john.doe@example.com',
+              phone_no: '+1 (555) 123-4567',
+              role: 'admin',
+              status: 'active',
+              address: '123 Main St',
+              created_at: '2023-01-15T08:30:00Z',
+              updated_at: '2023-06-10T14:45:00Z',
+            },
+            {
+              id: 2,
+              firstname: 'Jane',
+              lastname: 'Smith',
+              email: 'jane.smith@example.com',
+              phone_no: '+1 (555) 987-6543',
+              role: 'user',
+              status: 'active',
+              address: '456 Oak Ave',
+              created_at: '2023-02-20T10:15:00Z',
+              updated_at: '2023-06-08T09:30:00Z',
+            },
+            {
+              id: 3,
+              firstname: 'Robert',
+              lastname: 'Johnson',
+              email: 'robert.johnson@example.com',
+              phone_no: '+1 (555) 456-7890',
+              role: 'user',
+              status: 'inactive',
+              address: '789 Pine Blvd',
+              created_at: '2023-03-05T15:45:00Z',
+              updated_at: '2023-05-20T11:20:00Z',
+            },
+            {
+              id: 4,
+              firstname: 'Emily',
+              lastname: 'Davis',
+              email: 'emily.davis@example.com',
+              phone_no: '+1 (555) 234-5678',
+              role: 'delivery_person',
+              status: 'active',
+              address: '321 Maple Dr',
+              created_at: '2023-04-12T09:00:00Z',
+              updated_at: '2023-06-09T16:15:00Z',
+            },
+          ]);
+        }
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -154,13 +144,17 @@ function Users() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        // In a real app, you would delete from your API
-        // await axios.delete(`/auth/delete-user/${userId}`);
-        
-        // Mock delete for demonstration
+        // Call backend API to delete user
+        await axios.delete(`/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        // Update local state after successful deletion
         const updatedUsers = users.filter((user) => user.id !== userId);
         setUsers(updatedUsers);
-        
+
         setSnackbar({
           open: true,
           message: 'User deleted successfully',
@@ -197,18 +191,18 @@ function Users() {
     if (filterRole !== 'all' && user.role !== filterRole) {
       return false;
     }
-    
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        user.firstName.toLowerCase().includes(query) ||
-        user.lastName.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.phone.includes(query)
+        user.firstname?.toLowerCase().includes(query) ||
+        user.lastname?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query) ||
+        user.phone_no?.includes(query)
       );
     }
-    
+
     return true;
   });
 
@@ -223,22 +217,22 @@ function Users() {
             color="error"
           />
         );
-      case 'manager':
+      case 'user':
         return (
           <Chip
-            icon={<AdminIcon />}
-            label="Manager"
+            icon={<PersonIcon />}
+            label="User"
             size="small"
-            color="warning"
+            color="primary"
           />
         );
-      case 'customer':
+      case 'delivery_person':
         return (
           <Chip
-            icon={<CustomerIcon />}
-            label="Customer"
+            icon={<PersonIcon />}
+            label="Delivery Person"
             size="small"
-            color="info"
+            color="success"
           />
         );
       default:
@@ -262,8 +256,8 @@ function Users() {
     );
   };
 
-  const getInitials = (firstName, lastName) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (firstname, lastname) => {
+    return `${firstname?.charAt(0) || ''}${lastname?.charAt(0) || ''}`.toUpperCase();
   };
 
   const getAvatarColor = (id) => {
@@ -333,8 +327,8 @@ function Users() {
                 >
                   <MenuItem value="all">All Roles</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="customer">Customer</MenuItem>
+                  <MenuItem value="user">User</MenuItem>
+                  <MenuItem value="delivery_person">Delivery Person</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -368,11 +362,11 @@ function Users() {
                         mr: 2,
                       }}
                     >
-                      {getInitials(user.firstName, user.lastName)}
+                      {getInitials(user.firstname, user.lastname)}
                     </Avatar>
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {user.firstName} {user.lastName}
+                        {user.firstname || ''} {user.lastname || ''}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         ID: {user.id}
@@ -388,7 +382,7 @@ function Users() {
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <PhoneIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                      <Typography variant="body2">{user.phone}</Typography>
+                      <Typography variant="body2">{user.phone_no}</Typography>
                     </Box>
                   </Box>
                 </TableCell>
@@ -396,13 +390,13 @@ function Users() {
                 <TableCell>{getStatusChip(user.status)}</TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </Typography>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {user.lastLogin
-                      ? new Date(user.lastLogin).toLocaleDateString()
+                    {user.updated_at
+                      ? new Date(user.updated_at).toLocaleDateString()
                       : 'Never'}
                   </Typography>
                 </TableCell>

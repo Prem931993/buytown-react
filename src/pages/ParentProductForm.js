@@ -165,7 +165,6 @@ function ParentProductForm() {
       }
 
       setLoading(true);
-      console.log('Form Data:', formData);
       // Prepare data for API
       const productData = {
         ...formData,

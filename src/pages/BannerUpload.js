@@ -49,7 +49,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { bannerService } from '../services/bannerService';
+import { adminService } from '../services/adminService';
 
 const BannerUpload = () => {
   const [banners, setBanners] = useState([]);
@@ -106,7 +106,7 @@ const BannerUpload = () => {
           <Box sx={{ 
             width: 60, 
             height: 40, 
-            backgroundColor: '#333', 
+            backgroundColor: '#ccc', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
@@ -230,7 +230,7 @@ const BannerUpload = () => {
   const fetchBanners = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await bannerService.getBanners();
+      const data = await adminService.banners.getAll();
       setBanners(data.banners || []);
     } catch (error) {
       showSnackbar('Failed to fetch banners: ' + error.message, 'error');
@@ -352,6 +352,7 @@ const BannerUpload = () => {
         let fileName = currentItem.url;
         
         if (currentItem.file) {
+          // Use the bannerService for upload to get proper base URL handling
           const formData = new FormData();
           formData.append('file', currentItem.file);
           const uploadResponse = await axios.post('/upload/banners', formData, {
@@ -379,7 +380,7 @@ const BannerUpload = () => {
           linkTarget: currentItem.linkTarget || '_self',
         };
 
-        await bannerService.uploadBanners(metadata); // Assuming this endpoint can handle updates
+        await adminService.banners.upload(metadata); // Assuming this endpoint can handle updates
         showSnackbar('Banner updated successfully!', 'success');
       } else {
         // Add new banner
@@ -392,7 +393,7 @@ const BannerUpload = () => {
             linkTarget: currentItem.linkTarget || '_self',
           };
 
-          await bannerService.uploadBanners(metadata);
+          await adminService.banners.upload(metadata);
           showSnackbar('YouTube URL added successfully!', 'success');
         } else {
           const formData = new FormData();
@@ -413,7 +414,7 @@ const BannerUpload = () => {
             linkTarget: currentItem.linkTarget || '_self',
           };
 
-          await bannerService.uploadBanners(metadata);
+          await adminService.banners.upload(metadata);
           showSnackbar('Banner uploaded successfully!', 'success');
         }
       }
@@ -453,7 +454,7 @@ const BannerUpload = () => {
         order_index: banner.order_index
       }));
       
-      await bannerService.updateBannerOrder(orderData);
+      await adminService.banners.updateOrder(orderData);
       showSnackbar('Banner order updated successfully!', 'success');
     } catch (error) {
       showSnackbar('Failed to update banner order: ' + error.message, 'error');
@@ -465,7 +466,7 @@ const BannerUpload = () => {
   const handleDeleteBanner = async (id) => {
     try {
       setLoading(true);
-      await bannerService.deleteBanner(id);
+      await adminService.banners.delete(id);
       showSnackbar('Banner deleted successfully!', 'success');
       fetchBanners();
     } catch (error) {
