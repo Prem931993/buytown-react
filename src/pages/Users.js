@@ -37,7 +37,6 @@ import {
   Phone as PhoneIcon,
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
-  ShoppingBag as CustomerIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material';
 

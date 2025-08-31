@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { adminLogin, logout } from '../services/authService';
 import { error } from '../utils/logger';
 
 const AuthContext = createContext();
@@ -16,7 +15,6 @@ export const useAuth = () => {
 const API_TOKEN_KEY = 'api_token';
 const API_TOKEN_EXPIRY_KEY = 'api_token_expiry';
 const API_TOKEN_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
-const ADMIN_ACCESS_TOKEN_KEY = 'admin_access_token';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const API_CLIENT_ID = process.env.REACT_APP_API_CLIENT_ID;

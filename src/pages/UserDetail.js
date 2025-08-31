@@ -368,7 +368,7 @@ function UserDetail() {
       const baseUrl = axios.defaults.baseURL;
       const deleteUrl = `${baseUrl}/users/${id}`;
 
-      const response = await axios.delete(deleteUrl, {
+      await axios.delete(deleteUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -646,7 +646,7 @@ function UserDetail() {
                                           return `${baseWithoutApi}/uploads/${formData.profile_photo}`;
                                         })())
                                   : null)}
-                          alt="Profile Photo"
+                          alt="User profile"
                           style={{
                             maxWidth: '100%',
                             maxHeight: 200,
@@ -745,7 +745,7 @@ function UserDetail() {
                                               return `${baseWithoutApi}/uploads/${formData.license}`;
                                             })())
                                       : null)}
-                              alt="License Document"
+                              alt="Delivery license"
                               style={{
                                 maxWidth: '100%',
                                 maxHeight: 200,
