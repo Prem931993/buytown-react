@@ -25,6 +25,9 @@ import Layout from './components/Layout';
 import BannerUpload from './pages/BannerUpload';
 import GeneralSettings from './pages/GeneralSettings';
 import SMSConfiguration from './pages/SMSConfiguration';
+import EmailConfig from './pages/EmailConfig';
+import TaxConfig from './pages/TaxConfig';
+import PaymentConfig from './pages/PaymentConfig';
 
 const theme = createTheme({
   palette: {
@@ -204,10 +207,10 @@ function App() {
               <Route path="users/edit/:id" element={<UserDetail />} />
               <Route path="reports" element={<Reports />} />
               <Route path="delivery" element={<PlaceholderPage />} />
-              <Route path="tax" element={<PlaceholderPage />} />
-              <Route path="payment" element={<PlaceholderPage />} />
+              <Route path="tax" element={<TaxConfig />} />
+              <Route path="payment" element={<PaymentConfig />} />
               <Route path="sms" element={<SMSConfiguration />} />
-              <Route path="email" element={<PlaceholderPage />} />
+              <Route path="email" element={<EmailConfig />} />
               <Route path="general/settings" element={<GeneralSettings />} />
               <Route path="general/banner-upload" element={<BannerUpload />} />
             </Route>

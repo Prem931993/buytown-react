@@ -219,6 +219,70 @@ export const adminService = {
     },
   },
 
+  // Dashboard operations
+  dashboard: {
+    // Get dashboard summary
+    getSummary: async () => {
+      const response = await adminApiClient.get('/dashboard/summary');
+      return response.data;
+    },
+    // Get orders awaiting confirmation count
+    getOrdersAwaitingConfirmation: async () => {
+      const response = await adminApiClient.get('/dashboard/orders-awaiting-confirmation');
+      return response.data;
+    },
+    // Get low stock products
+    getLowStockProducts: async (limit = 10) => {
+      const response = await adminApiClient.get(`/dashboard/low-stock-products?limit=${limit}`);
+      return response.data;
+    },
+    // Get recent sales
+    getRecentSales: async (days = 30) => {
+      const response = await adminApiClient.get(`/dashboard/recent-sales?days=${days}`);
+      return response.data;
+    },
+    // Get popular products
+    getPopularProducts: async (limit = 10) => {
+      const response = await adminApiClient.get(`/dashboard/popular-products?limit=${limit}`);
+      return response.data;
+    },
+    // Get most used delivery vehicles
+    getMostUsedDeliveryVehicles: async () => {
+      const response = await adminApiClient.get('/dashboard/delivery-vehicles');
+      return response.data;
+    },
+    // Get total products count
+    getTotalProductsCount: async () => {
+      const response = await adminApiClient.get('/dashboard/total-products');
+      return response.data;
+    },
+    // Get total orders count
+    getTotalOrdersCount: async () => {
+      const response = await adminApiClient.get('/dashboard/total-orders');
+      return response.data;
+    },
+    // Get total users count
+    getTotalUsersCount: async () => {
+      const response = await adminApiClient.get('/dashboard/total-users');
+      return response.data;
+    },
+    // Get total revenue
+    getTotalRevenue: async () => {
+      const response = await adminApiClient.get('/dashboard/total-revenue');
+      return response.data;
+    },
+    // Get monthly revenue
+    getMonthlyRevenue: async () => {
+      const response = await adminApiClient.get('/dashboard/monthly-revenue');
+      return response.data;
+    },
+    // Get order statistics
+    getOrderStatistics: async () => {
+      const response = await adminApiClient.get('/dashboard/order-statistics');
+      return response.data;
+    },
+  },
+
   // Auth operations
   auth: {
     // Admin login
