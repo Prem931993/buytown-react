@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { error } from '../utils/logger';
+import { tokenManager, refreshAccessToken } from '../services/authService.js';
 
 const AuthContext = createContext();
 
@@ -75,27 +76,19 @@ export const AuthProvider = ({ children }) => {
           originalRequest._retry = true;
 
           try {
-            // Try to refresh the token
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-              const response = await axios.post('/auth/refresh-token', { refreshToken });
-              const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+            // Try to refresh the token using the centralized token manager
+            const newAccessToken = await refreshAccessToken();
 
-              if (newAccessToken && newRefreshToken) {
-                localStorage.setItem('token', newAccessToken);
-                localStorage.setItem('refresh_token', newRefreshToken);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+            // Update axios headers with new token
+            axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
 
-                // Retry the original request with new token
-                originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-                return axios(originalRequest);
-              }
-            }
+            // Retry the original request with new token
+            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+            return axios(originalRequest);
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
             // If refresh fails, logout user
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_token');
+            tokenManager.clearTokens();
             setIsAuthenticated(false);
             setUser(null);
             delete axios.defaults.headers.common['Authorization'];
@@ -151,7 +144,7 @@ export const AuthProvider = ({ children }) => {
     
     async function checkAuthStatus() {
       try {
-        const userToken = localStorage.getItem('token');
+        const userToken = tokenManager.getAccessToken();
         
         if (userToken && isMounted) {
           // If token exists, consider user authenticated immediately
@@ -222,8 +215,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'No access or refresh token received' };
       }
       
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('refresh_token', refreshToken);
+      tokenManager.setTokens(accessToken, refreshToken);
       
       setIsAuthenticated(true);
       setUser(user);
@@ -250,12 +242,11 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
       // Continue with local logout even if the server request fails
     } finally {
-      // Clear local storage and state
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      // Clear tokens and state
+      tokenManager.clearTokens();
       setIsAuthenticated(false);
       setUser(null);
-      
+
       // Reset axios default headers
       delete axios.defaults.headers.common['Authorization'];
     }
@@ -269,31 +260,16 @@ export const AuthProvider = ({ children }) => {
     logout,
     apiToken,
     refreshToken: async () => {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) {
-        console.error('No refresh token available');
-        setIsAuthenticated(false);
-        setUser(null);
-        return false;
-      }
       try {
-        const response = await axios.post('/auth/refresh-token', { refreshToken });
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-        if (newAccessToken && newRefreshToken) {
-          localStorage.setItem('token', newAccessToken);
-          localStorage.setItem('refresh_token', newRefreshToken);
-          axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-          setIsAuthenticated(true);
-          return true;
-        } else {
-          throw new Error('Invalid tokens received from refresh');
-        }
+        const newAccessToken = await refreshAccessToken();
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        setIsAuthenticated(true);
+        return true;
       } catch (error) {
         console.error('Refresh token error:', error);
         setIsAuthenticated(false);
         setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
+        tokenManager.clearTokens();
         return false;
       }
     }
