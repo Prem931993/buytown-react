@@ -28,7 +28,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
-import adminService, { adminApiClient } from '../services/adminService';
+import { adminApiClient } from '../services/adminService';
 
 function UserDetail() {
   const { id } = useParams();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import adminService, { adminApiClient } from '../services/adminService';
+import { adminApiClient } from '../services/adminService';
 import {
   Box,
   Typography,
