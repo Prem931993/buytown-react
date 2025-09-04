@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import adminService from '../services/adminService';
 
 function PaymentConfig() {
   const [paymentConfigs, setPaymentConfigs] = useState([]);
@@ -22,8 +22,8 @@ function PaymentConfig() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/config/payment-configs');
-      setPaymentConfigs(response.data.configs || []);
+      const response = await adminService.config.getPaymentConfigs();
+      setPaymentConfigs(response.configs || []);
     } catch (err) {
       setError('Failed to load payment configurations');
     } finally {
@@ -46,7 +46,7 @@ function PaymentConfig() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/config/payment-configs', formData);
+      await adminService.config.createPaymentConfig(formData);
       setShowForm(false);
       setFormData({
         gateway_name: '',
@@ -67,7 +67,7 @@ function PaymentConfig() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this configuration?')) {
       try {
-        await axios.delete(`/config/payment-configs/${id}`);
+        await adminService.config.deletePaymentConfig(id);
         fetchPaymentConfigs();
       } catch (err) {
         setError('Failed to delete payment configuration');

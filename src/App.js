@@ -19,6 +19,8 @@ import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
 import Reports from './pages/Reports';
 import PlaceholderPage from './pages/PlaceholderPage';
+import VehicleManagement from './pages/VehicleManagement';
+import DeliverySettings from './pages/DeliverySettings';
 import Brands from './pages/Brands';
 import Variations from './pages/Variations';
 import Layout from './components/Layout';
@@ -28,6 +30,8 @@ import SMSConfiguration from './pages/SMSConfiguration';
 import EmailConfig from './pages/EmailConfig';
 import TaxConfig from './pages/TaxConfig';
 import PaymentConfig from './pages/PaymentConfig';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const theme = createTheme({
   palette: {
@@ -164,12 +168,12 @@ const theme = createTheme({
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  
+
   // Don't redirect while still loading
   if (loading) {
     return <div>Loading...</div>;
   }
-  
+
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 function App() {
@@ -180,6 +184,8 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={
@@ -206,11 +212,13 @@ function App() {
               <Route path="users/add" element={<UserDetail />} />
               <Route path="users/edit/:id" element={<UserDetail />} />
               <Route path="reports" element={<Reports />} />
-              <Route path="delivery" element={<PlaceholderPage />} />
+              <Route path="vehicles" element={<VehicleManagement />} />
+              <Route path="delivery" element={<DeliverySettings />} />
               <Route path="tax" element={<TaxConfig />} />
               <Route path="payment" element={<PaymentConfig />} />
               <Route path="sms" element={<SMSConfiguration />} />
               <Route path="email" element={<EmailConfig />} />
+              <Route path="forgot-password-admin" element={<ForgotPassword />} />
               <Route path="general/settings" element={<GeneralSettings />} />
               <Route path="general/banner-upload" element={<BannerUpload />} />
             </Route>

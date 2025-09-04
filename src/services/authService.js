@@ -1,12 +1,13 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import { adminApiClient } from './adminService.js';
 
 // Token management utilities
 export const tokenManager = {
-  setTokens: (accessToken, refreshToken) => {
+  setTokens: (accessToken, refreshToken, adminToken = null) => {
     localStorage.setItem('token', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    if (adminToken) {
+      localStorage.setItem('adminToken', adminToken);
+    }
   },
 
   getAccessToken: () => {
@@ -17,9 +18,15 @@ export const tokenManager = {
     return localStorage.getItem('refreshToken');
   },
 
+  getAdminToken: () => {
+    return localStorage.getItem('adminToken');
+  },
+
   clearTokens: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('apiToken');
   },
 
   isTokenExpired: (token) => {
@@ -42,7 +49,7 @@ export async function refreshAccessToken() {
       throw new Error('No refresh token available');
     }
 
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+    const response = await adminApiClient.post('/auth/refresh-token', {
       refreshToken: refreshToken
     });
 
@@ -62,8 +69,8 @@ export async function refreshAccessToken() {
 
 export async function adminLogin(identity, password, apiToken) {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/admin/login`,
+    const response = await adminApiClient.post(
+      '/auth/admin/login',
       { identity, password },
       {
         headers: {
@@ -85,9 +92,12 @@ export async function adminLogin(identity, password, apiToken) {
 
 export async function logout(token) {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/logout`,
-      {},
+    const refreshToken = tokenManager.getRefreshToken();
+    const response = await adminApiClient.post(
+      '/auth/logout',
+      {
+        refreshToken: refreshToken
+      },
       {
         headers: {
           Authorization: `Bearer ${token}`,

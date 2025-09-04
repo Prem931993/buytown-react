@@ -87,11 +87,16 @@ export const AuthProvider = ({ children }) => {
             return axios(originalRequest);
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
-            // If refresh fails, logout user
-            tokenManager.clearTokens();
-            setIsAuthenticated(false);
-            setUser(null);
-            delete axios.defaults.headers.common['Authorization'];
+            // If refresh fails, only logout if it's a definitive auth failure
+            // Don't logout for network errors or temporary server issues
+            if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+              tokenManager.clearTokens();
+              setIsAuthenticated(false);
+              setUser(null);
+              delete axios.defaults.headers.common['Authorization'];
+            }
+            // For other errors (network, server errors), let the original request fail
+            // This prevents logout on temporary connectivity issues
           }
         }
 
@@ -158,10 +163,10 @@ export const AuthProvider = ({ children }) => {
           // Set up axios defaults
           try {
             if (!isMounted) return;
-            
+
             axios.defaults.baseURL = API_BASE_URL;
-            // Set user token in headers for authenticated requests
-            axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+            // Keep the apiToken in Authorization header for default axios instance
+            // Don't override with accessToken
           } catch (apiErr) {
             console.error('Error setting up API token:', apiErr);
             // Continue with authentication even if API token setup fails
@@ -184,7 +189,7 @@ export const AuthProvider = ({ children }) => {
     
     checkAuthStatus();
     return () => { isMounted = false; };
-  }, [isAuthenticated]);
+  }, []);
 
   // Handle token expiration and regeneration on demand
   const ensureApiToken = async () => {
@@ -208,18 +213,19 @@ export const AuthProvider = ({ children }) => {
       });
       
       // Backend returns accessToken instead of token
-      const { accessToken, refreshToken, user } = response.data;
-      
+      const { accessToken, refreshToken, adminToken, user } = response.data;
+
       if (!accessToken || !refreshToken) {
         console.error('No accessToken or refreshToken in response data:', response.data);
         return { success: false, error: 'No access or refresh token received' };
       }
-      
-      tokenManager.setTokens(accessToken, refreshToken);
-      
+
+      tokenManager.setTokens(accessToken, refreshToken, adminToken);
+      localStorage.setItem('apiToken', token); // Store apiToken for adminService
+
       setIsAuthenticated(true);
       setUser(user);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);

@@ -29,7 +29,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,13 +43,13 @@ function Login() {
     setLoading(true);
 
     const result = await login(email, password);
-    
+
     if (result.success) {
       navigate('/');
     } else {
       setError(result.error);
     }
-    
+
     setLoading(false);
   };
 
@@ -77,7 +77,7 @@ function Login() {
           animation: 'float 6s ease-in-out infinite',
         }}
       />
-      
+
       <Paper
         elevation={24}
         sx={{
@@ -134,9 +134,9 @@ function Login() {
         </Box>
 
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
+          <Alert
+            severity="error"
+            sx={{
               mb: 3,
               borderRadius: 2,
               '& .MuiAlert-icon': {
@@ -211,7 +211,7 @@ function Login() {
               },
             }}
           />
-          
+
           <Button
             type="submit"
             fullWidth
@@ -221,7 +221,7 @@ function Login() {
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
             sx={{
               mt: 3,
-              mb: 2,
+              mb: 1,
               py: 1.5,
               borderRadius: 2,
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -234,6 +234,24 @@ function Login() {
           >
             {loading ? 'Signing In...' : 'Sign In'}
           </Button>
+
+          <Box sx={{ textAlign: 'right', mb: 2 }}>
+            <Button
+              variant="text"
+              onClick={() => navigate('/forgot-password')}
+              sx={{
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                color: 'primary.main',
+                '&:hover': {
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  textDecoration: 'underline',
+                },
+              }}
+            >
+              Forgot Password?
+            </Button>
+          </Box>
         </Box>
 
         <Divider sx={{ my: 3 }}>

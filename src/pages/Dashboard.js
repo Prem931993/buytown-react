@@ -23,6 +23,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
+import { adminService } from '../services/adminService';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -38,18 +39,65 @@ function Dashboard() {
   const [recentSales, setRecentSales] = useState([]);
   const [popularProducts, setPopularProducts] = useState([]);
 
-  useEffect(() => {
-    // Simulate API call with setTimeout
-    const timer = setTimeout(() => {
-      // Set mock data
+  // Format currency in INR
+  const formatINR = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all dashboard data in parallel
+      const [
+        summaryResponse,
+        ordersResponse,
+        lowStockResponse,
+        recentSalesResponse,
+        popularProductsResponse
+      ] = await Promise.all([
+        adminService.dashboard.getSummary(),
+        adminService.dashboard.getOrdersAwaitingConfirmation(),
+        adminService.dashboard.getLowStockProducts(5),
+        adminService.dashboard.getRecentSales(30),
+        adminService.dashboard.getPopularProducts(5)
+      ]);
+
+      // Update stats
+      setStats({
+        revenue: summaryResponse.totalRevenue || 0,
+        orders: summaryResponse.totalOrders || 0,
+        products: summaryResponse.totalProducts || 0,
+        users: summaryResponse.totalUsers || 0,
+      });
+
+      // Update pending orders
+      setPendingOrders(ordersResponse.orders || []);
+
+      // Update low stock products
+      setLowStockProducts(lowStockResponse.products || []);
+
+      // Update recent sales
+      setRecentSales(recentSalesResponse.sales || []);
+
+      // Update popular products
+      setPopularProducts(popularProductsResponse.products || []);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data if API fails
       setStats({
         revenue: 24580,
         orders: 1254,
         products: 567,
         users: 3890,
       });
-
-      // Set mock pending orders
       setPendingOrders([
         { id: 'ORD-7351', customer: 'John Doe', date: new Date(), amount: 245.99, status: 'Pending' },
         { id: 'ORD-7352', customer: 'Jane Smith', date: new Date(), amount: 189.50, status: 'Pending' },
@@ -57,8 +105,6 @@ function Dashboard() {
         { id: 'ORD-7354', customer: 'Emily Davis', date: new Date(), amount: 129.99, status: 'Pending' },
         { id: 'ORD-7355', customer: 'Michael Brown', date: new Date(), amount: 499.99, status: 'Pending' },
       ]);
-
-      // Set mock low stock products
       setLowStockProducts([
         { id: 'PRD-1001', name: 'Wireless Earbuds', category: 'Electronics', stock: 3, status: 'Low Stock' },
         { id: 'PRD-1002', name: 'Bluetooth Speaker', category: 'Electronics', stock: 0, status: 'Out of Stock' },
@@ -66,8 +112,6 @@ function Dashboard() {
         { id: 'PRD-1004', name: 'Phone Case', category: 'Accessories', stock: 5, status: 'Low Stock' },
         { id: 'PRD-1005', name: 'USB-C Cable', category: 'Accessories', stock: 0, status: 'Out of Stock' },
       ]);
-
-      // Set mock recent sales
       setRecentSales([
         { id: 'SALE-8001', customer: 'Alice Johnson', date: new Date(2023, 6, 15), amount: 329.99 },
         { id: 'SALE-8002', customer: 'Bob Williams', date: new Date(2023, 6, 14), amount: 124.50 },
@@ -75,8 +119,6 @@ function Dashboard() {
         { id: 'SALE-8004', customer: 'David Anderson', date: new Date(2023, 6, 13), amount: 499.95 },
         { id: 'SALE-8005', customer: 'Eva Wilson', date: new Date(2023, 6, 12), amount: 149.99 },
       ]);
-
-      // Set mock popular products
       setPopularProducts([
         { id: 'PRD-1001', name: 'Wireless Earbuds', category: 'Electronics', sales: 124 },
         { id: 'PRD-1003', name: 'Smart Watch', category: 'Electronics', sales: 98 },
@@ -84,20 +126,22 @@ function Dashboard() {
         { id: 'PRD-1004', name: 'Phone Case', category: 'Accessories', sales: 76 },
         { id: 'PRD-1005', name: 'USB-C Cable', category: 'Accessories', sales: 65 },
       ]);
-
+    } finally {
       setLoading(false);
-    }, 1000); // 1 second delay to simulate network request
+    }
+  };
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
   // Dashboard card component with hover effect
   const DashboardCard = ({ title, value, icon, color, onClick }) => (
-    <Card 
-      sx={{ 
-        height: '100%', 
+    <Card
+      sx={{
+        height: '100%',
         width: '100%',
-        position: 'relative', 
+        position: 'relative',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
         cursor: 'pointer',
@@ -167,7 +211,7 @@ function Dashboard() {
             variant="contained"
             color="primary"
             startIcon={<RefreshIcon />}
-            onClick={() => window.location.reload()}
+            onClick={fetchDashboardData}
           >
             Refresh
           </Button>
@@ -187,8 +231,8 @@ function Dashboard() {
             overflow: 'hidden',
           }}
         >
-          <Box sx={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%', 
-            background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)', 
+          <Box sx={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%',
+            background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)',
             transform: 'translateX(30%)',
             display: { xs: 'none', md: 'block' }
           }} />
@@ -205,7 +249,7 @@ function Dashboard() {
           <Grid item xs={12} sm={6} md={6}>
             <DashboardCard
               title="Total Revenue"
-              value={`$${stats.revenue.toLocaleString()}`}
+              value={formatINR(stats.revenue)}
               icon={<RevenueIcon sx={{ color: '#fff' }} />}
               color="#22c55e"
               onClick={() => handleCardClick('/reports')}
@@ -249,9 +293,9 @@ function Dashboard() {
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#6366f1' }}>
                 Orders Awaiting Confirmation
               </Typography>
-              <Button 
-                size="small" 
-                endIcon={<ArrowForward />} 
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
                 onClick={() => handleCardClick('/orders')}
                 sx={{ color: '#6366f1', '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.08)' } }}
               >
@@ -271,11 +315,11 @@ function Dashboard() {
             ) : (
               <Box>
                 {pendingOrders.slice(0, 5).map((order) => (
-                  <Box 
-                    key={order.id} 
-                    sx={{ 
-                      p: 2, 
-                      borderBottom: '1px solid', 
+                  <Box
+                    key={order.id}
+                    sx={{
+                      p: 2,
+                      borderBottom: '1px solid',
                       borderColor: 'divider',
                       '&:hover': { bgcolor: 'action.hover' },
                       display: 'flex',
@@ -288,21 +332,21 @@ function Dashboard() {
                         {order.id}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                                              {order.customer} • ${typeof order.amount === 'number' ? order.amount.toFixed(2) : '0.00'}
+                                              {order.customer} • {formatINR(order.amount)}
                                             </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <IconButton 
-                        size="small" 
-                        color="success" 
+                      <IconButton
+                        size="small"
+                        color="success"
                         sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)' }}
                         onClick={() => navigate(`/orders/edit/${order.id}`)}
                       >
                         <CheckCircleIcon fontSize="small" />
                       </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="error" 
+                      <IconButton
+                        size="small"
+                        color="error"
                         sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)' }}
                         onClick={() => console.log(`Cancel Order ${order.id}`)}
                       >
@@ -323,9 +367,9 @@ function Dashboard() {
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
                 Low Stock Products
               </Typography>
-              <Button 
-                size="small" 
-                endIcon={<ArrowForward />} 
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
                 onClick={() => handleCardClick('/products')}
                 sx={{ color: '#f59e0b', '&:hover': { backgroundColor: 'rgba(245, 158, 11, 0.08)' } }}
               >
@@ -345,11 +389,11 @@ function Dashboard() {
             ) : (
               <Box>
                 {lowStockProducts.slice(0, 5).map((product) => (
-                  <Box 
-                    key={product.id} 
-                    sx={{ 
-                      p: 2, 
-                      borderBottom: '1px solid', 
+                  <Box
+                    key={product.id}
+                    sx={{
+                      p: 2,
+                      borderBottom: '1px solid',
                       borderColor: 'divider',
                       '&:hover': { bgcolor: 'action.hover' },
                       display: 'flex',
@@ -366,9 +410,9 @@ function Dashboard() {
                       </Typography>
                     </Box>
                     <Box>
-                      <Button 
-                        size="small" 
-                        variant="contained" 
+                      <Button
+                        size="small"
+                        variant="contained"
                         color="primary"
                         onClick={() => navigate(`/products/edit/${product.id}`)}
                       >
@@ -389,9 +433,9 @@ function Dashboard() {
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#10b981' }}>
                 Recent Sales
               </Typography>
-              <Button 
-                size="small" 
-                endIcon={<ArrowForward />} 
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
                 onClick={() => handleCardClick('/reports')}
                 sx={{ color: '#10b981', '&:hover': { backgroundColor: 'rgba(16, 185, 129, 0.08)' } }}
               >
@@ -412,11 +456,11 @@ function Dashboard() {
                   </Box>
                 ) : (
                   recentSales.map((sale) => (
-                    <Box 
-                      key={sale.id} 
-                      sx={{ 
-                        p: 2, 
-                        borderBottom: '1px solid', 
+                    <Box
+                      key={sale.id}
+                      sx={{
+                        p: 2,
+                        borderBottom: '1px solid',
                         borderColor: 'divider',
                         '&:hover': { bgcolor: 'action.hover' },
                         display: 'flex',
@@ -431,12 +475,12 @@ function Dashboard() {
                           {sale.id}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {sale.customer} • {sale.date.toLocaleDateString()}
+                          {sale.customer} • {sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600, mr: 1 }}>
-                                                  ${typeof sale.amount === 'number' ? sale.amount.toFixed(2) : '0.00'}
+                                                  {formatINR(sale.amount)}
                                                 </Typography>
                         <ArrowForward fontSize="small" sx={{ color: '#10b981', fontSize: 16 }} />
                       </Box>
@@ -455,9 +499,9 @@ function Dashboard() {
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
                 Popular Products
               </Typography>
-              <Button 
-                size="small" 
-                endIcon={<ArrowForward />} 
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
                 onClick={() => handleCardClick('/products')}
                 sx={{ color: '#8b5cf6', '&:hover': { backgroundColor: 'rgba(139, 92, 246, 0.08)' } }}
               >
@@ -478,11 +522,11 @@ function Dashboard() {
                   </Box>
                 ) : (
                   popularProducts.map((product) => (
-                    <Box 
-                      key={product.id} 
-                      sx={{ 
-                        p: 2, 
-                        borderBottom: '1px solid', 
+                    <Box
+                      key={product.id}
+                      sx={{
+                        p: 2,
+                        borderBottom: '1px solid',
                         borderColor: 'divider',
                         '&:hover': { bgcolor: 'action.hover' },
                         display: 'flex',
@@ -499,10 +543,10 @@ function Dashboard() {
                         </Typography>
                       </Box>
                       <Box>
-                        <Chip 
-                          label="View" 
-                          size="small" 
-                          color="primary" 
+                        <Chip
+                          label="View"
+                          size="small"
+                          color="primary"
                           onClick={() => handleCardClick(`/products/${product.id}`)}
                           sx={{ cursor: 'pointer', bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' } }}
                         />

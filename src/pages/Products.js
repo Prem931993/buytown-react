@@ -34,7 +34,7 @@ import {
   FilterList as FilterIcon,
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import adminService, { adminApiClient } from '../services/adminService';
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -81,7 +81,7 @@ function Products() {
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
       
       // Fetch products from API
-      const response = await axios.get('/products', { params });
+      const response = await adminApiClient.get('/products', { params });
 
       // Set products and pagination data
       setProducts(response.data.products || []);
@@ -116,7 +116,7 @@ function Products() {
       };
       
       // Fetch products from API
-      const response = await axios.get('/products', { params });
+      const response = await adminApiClient.get('/products', { params });
 
       // Set products and pagination data
       setProducts(response.data.products || []);
@@ -148,7 +148,7 @@ function Products() {
         
         // Fetch categories
         try {
-          const categoriesResponse = await axios.get('/categories');
+          const categoriesResponse = await adminApiClient.get('/categories');
           setCategories(categoriesResponse.data.categories || []);
         } catch (error) {
           console.error('Error fetching categories:', error);
@@ -198,7 +198,7 @@ function Products() {
   const handleDelete = async (id) => {
     try {
       // Delete product from API
-      await axios.delete(`/products/${id}`);
+      await adminApiClient.delete(`/products/${id}`);
       
       // Update the products list
       const updatedProducts = products.filter((p) => p.id !== id);

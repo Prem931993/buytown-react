@@ -28,7 +28,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import adminService, { adminApiClient } from '../services/adminService';
 
 function UserDetail() {
   const { id } = useParams();
@@ -67,11 +67,7 @@ function UserDetail() {
           setLoading(true);
           // In a real implementation, this would be a GET request
           // Using POST here to match the backend API pattern
-          const response = await axios.get(`/users/${id}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          });
+          const response = await adminApiClient.get(`/users/${id}`);
           const userData = response.data;
 
           setFormData({
@@ -292,20 +288,10 @@ function UserDetail() {
             }
           }
 
-          await axios.put(`/users/${id}`, formDataToSend, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          });
+          await adminApiClient.put(`/users/${id}`, formDataToSend);
         } else {
           // No files, send as JSON
-          await axios.put(`/users/${id}`, updateData, {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          });
+          await adminApiClient.put(`/users/${id}`, updateData);
         }
 
         setSnackbar({
@@ -327,12 +313,7 @@ function UserDetail() {
           }
         }
 
-        await axios.post('/users', submitData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        await adminApiClient.post('/users', submitData);
         setSnackbar({
           open: true,
           message: 'User added successfully',
@@ -363,16 +344,7 @@ function UserDetail() {
     try {
       setLoading(true);
 
-      // Fix: Use a more robust approach to construct the API URL
-      // If axios.defaults.baseURL is not set, use a default value
-      const baseUrl = axios.defaults.baseURL;
-      const deleteUrl = `${baseUrl}/users/${id}`;
-
-      await axios.delete(deleteUrl, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      await adminApiClient.delete(`/users/${id}`);
 
       setSnackbar({
         open: true,
@@ -641,7 +613,7 @@ function UserDetail() {
                                       ? formData.profile_photo
                                       : (() => {
                                           // Construct base URL without /api/v1 for static files
-                                          const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                          const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
                                           const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                           return `${baseWithoutApi}/uploads/${formData.profile_photo}`;
                                         })())
@@ -722,7 +694,7 @@ function UserDetail() {
                                     ? formData.license
                                     : (() => {
                                         // Construct base URL without /api/v1 for static files
-                                        const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                        const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
                                         const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                         return `${baseWithoutApi}/uploads/${formData.license}`;
                                       })();
@@ -740,7 +712,7 @@ function UserDetail() {
                                           ? formData.license
                                           : (() => {
                                               // Construct base URL without /api/v1 for static files
-                                              const baseURL = axios.defaults.baseURL || 'http://localhost:3000/api/v1';
+                                              const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
                                               const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                               return `${baseWithoutApi}/uploads/${formData.license}`;
                                             })())

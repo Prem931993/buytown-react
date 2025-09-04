@@ -31,6 +31,7 @@ import {
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
+import adminService from '../services/adminService';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -84,8 +85,12 @@ function ProductDetail() {
       try {
         // Fetch categories
         try {
-          const categoriesResponse = await axios.get('/categories');
-          setCategories(categoriesResponse.data.categories || []);
+          const categoriesResponse = await adminService.categories.getAll();
+          // Ensure we always have an array
+          const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse :
+                                (categoriesResponse?.data && Array.isArray(categoriesResponse.data)) ? categoriesResponse.data :
+                                [];
+          setCategories(categoriesData);
         } catch (error) {
           console.error('Error fetching categories:', error);
           // Fallback to mock data if API fails
@@ -99,8 +104,12 @@ function ProductDetail() {
 
         // Fetch brands
         try {
-          const brandsResponse = await axios.get('/brands');
-          setBrands(brandsResponse.data.brands || []);
+          const brandsResponse = await adminService.brands.getAll();
+          // Ensure we always have an array
+          const brandsData = Array.isArray(brandsResponse) ? brandsResponse :
+                            (brandsResponse?.data && Array.isArray(brandsResponse.data)) ? brandsResponse.data :
+                            [];
+          setBrands(brandsData);
         } catch (error) {
           console.error('Error fetching brands:', error);
           // Fallback to mock data if API fails
@@ -114,8 +123,12 @@ function ProductDetail() {
 
         // Fetch variations
         try {
-          const variationsResponse = await axios.get('/variations');
-          setVariations(variationsResponse.data.variations || []);
+          const variationsResponse = await adminService.variations.getAll();
+          // Ensure we always have an array
+          const variationsData = Array.isArray(variationsResponse) ? variationsResponse :
+                                (variationsResponse?.data && Array.isArray(variationsResponse.data)) ? variationsResponse.data :
+                                [];
+          setVariations(variationsData);
         } catch (error) {
           console.error('Error fetching variations:', error);
           // Fallback to mock data if API fails
@@ -130,9 +143,23 @@ function ProductDetail() {
         // If in edit mode, fetch product details
         if (isEditMode) {
           try {
-            const productResponse = await axios.get(`/products/${id}`);
-            const productData = productResponse.data.product;
-            
+            const productResponse = await adminService.products.getById(id);
+            console.log('Product response:', productResponse); // Debug log
+
+            // Handle different possible response structures
+            let productData = productResponse;
+            if (productResponse?.data) {
+              productData = productResponse.data;
+            } else if (productResponse?.product) {
+              productData = productResponse.product;
+            }
+
+            console.log('Product data:', productData); // Debug log
+
+            if (!productData || typeof productData !== 'object') {
+              throw new Error('Invalid product data received');
+            }
+
             // Format the data for the form
             setFormData({
               name: productData.name || '',
@@ -159,21 +186,48 @@ function ProductDetail() {
               product_type: productData.product_type || 'simple',
               parent_product_id: productData.parent_product_id || '',
             });
-            
+
             // Set existing images
-            if (productData.images) {
+            if (productData.images && Array.isArray(productData.images)) {
               setProductImages(productData.images);
             }
-            
+
             // Set child products if this is a parent product
-            if (productData.product_type === 'parent' && productData.childProducts) {
+            if (productData.product_type === 'parent' && productData.childProducts && Array.isArray(productData.childProducts)) {
               setSelectedChildProducts(productData.childProducts.map(child => child.id));
             }
+
+            console.log('Form data set:', {
+              name: productData.name || '',
+              description: productData.description || '',
+              sku_code: productData.sku_code || '',
+              category_id: productData.category_id || '',
+              subcategory_id: productData.subcategory_id || '',
+              brand_id: productData.brand_id || '',
+              color: productData.color || '',
+              size_dimension: productData.size_dimension || '',
+              unit: productData.unit || '',
+              weight_kg: productData.weight_kg ? productData.weight_kg.toString() : '',
+              length_mm: productData.length_mm ? productData.length_mm.toString() : '',
+              width_mm: productData.width_mm ? productData.width_mm.toString() : '',
+              height_mm: productData.height_mm ? productData.height_mm.toString() : '',
+              selling_price: productData.selling_price ? productData.selling_price.toString() : '',
+              price: productData.price ? productData.price.toString() : '', // Original price field
+              discount: productData.discount ? productData.discount.toString() : '',
+              gst: productData.gst ? productData.gst.toString() : '',
+              stock: productData.stock ? productData.stock.toString() : '',
+              min_order_qty: productData.min_order_qty ? productData.min_order_qty.toString() : '1',
+              delivery_flag: productData.delivery_flag !== undefined ? productData.delivery_flag : true,
+              status: productData.status || 1,
+              product_type: productData.product_type || 'simple',
+              parent_product_id: productData.parent_product_id || '',
+            }); // Debug log
+
           } catch (error) {
             console.error('Error fetching product details:', error);
             setSnackbar({
               open: true,
-              message: 'Failed to load product details',
+              message: `Failed to load product details: ${error.message}`,
               severity: 'error',
             });
           }
@@ -181,8 +235,8 @@ function ProductDetail() {
         
         // Fetch all products for parent-child relationship management
         try {
-          const productsResponse = await axios.get('/products');
-          setAllProducts(productsResponse.data.products || []);
+          const productsResponse = await adminService.products.getAll();
+          setAllProducts(productsResponse || []);
         } catch (error) {
           console.error('Error fetching all products:', error);
         }
@@ -293,11 +347,7 @@ function ProductDetail() {
 
       if (isEditMode) {
         // Update existing product
-        await axios.put(`/products/${id}`, formDataObj, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        await adminService.products.update(id, formDataObj);
         // Clear the images to remove state after successful update
         setImagesToRemove([]);
         setSnackbar({
@@ -307,17 +357,13 @@ function ProductDetail() {
         });
       } else {
         // Create new product
-        await axios.post('/products', formDataObj, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        await adminService.products.create(formDataObj);
         setSnackbar({
           open: true,
           message: 'Product added successfully',
           severity: 'success',
         });
-        
+
         // Redirect to the product list after a short delay
         setTimeout(() => {
           navigate('/products');
@@ -339,17 +385,17 @@ function ProductDetail() {
     if (!window.confirm('Are you sure you want to delete this product?')) {
       return;
     }
-    
+
     try {
       setLoading(true);
-      await axios.delete(`/products/${id}`);
-      
+      await adminService.products.delete(id);
+
       setSnackbar({
         open: true,
         message: 'Product deleted successfully',
         severity: 'success',
       });
-      
+
       // Redirect to the product list after a short delay
       setTimeout(() => {
         navigate('/products');
@@ -532,14 +578,14 @@ function ProductDetail() {
                           value={formData.parent_product_id}
                           onChange={handleInputChange}
                         >
-                          <MenuItem value="">Select Parent Product</MenuItem>
-                          {allProducts
-                            .filter(product => product.product_type === 'parent' || product.product_type === 'simple')
-                            .map((product) => (
-                              <MenuItem key={product.id} value={product.id}>
-                                {product.name} (SKU: {product.sku_code})
-                              </MenuItem>
-                            ))}
+                        <MenuItem value="">Select Parent Product</MenuItem>
+                        {Array.isArray(allProducts) && allProducts
+                          .filter(product => product.product_type === 'parent' || product.product_type === 'simple')
+                          .map((product) => (
+                            <MenuItem key={product.id} value={product.id}>
+                              {product.name} (SKU: {product.sku_code})
+                            </MenuItem>
+                          ))}
                         </Select>
                       </FormControl>
                     )}
@@ -564,7 +610,7 @@ function ProductDetail() {
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>Available Products</Typography>
                             <Paper sx={{ height: 300, overflow: 'auto' }}>
-                              {allProducts
+                              {Array.isArray(allProducts) && allProducts
                                 .filter(product => product.product_type !== 'parent' && product.id !== parseInt(id))
                                 .filter(product => !selectedChildProducts.includes(product.id))
                                 .map((product) => (
@@ -592,7 +638,7 @@ function ProductDetail() {
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>Selected Child Products</Typography>
                             <Paper sx={{ height: 300, overflow: 'auto' }}>
-                              {allProducts
+                              {Array.isArray(allProducts) && allProducts
                                 .filter(product => selectedChildProducts.includes(product.id))
                                 .map((product) => (
                                   <Box
@@ -641,7 +687,7 @@ function ProductDetail() {
                         required
                       >
                         <MenuItem value="">Select Category</MenuItem>
-                        {categories.map((category) => (
+                        {Array.isArray(categories) && categories.map((category) => (
                           <MenuItem key={category.id} value={category.id}>
                             {category.name}
                           </MenuItem>
@@ -658,7 +704,7 @@ function ProductDetail() {
                         onChange={handleInputChange}
                       >
                         <MenuItem value="">Select Subcategory</MenuItem>
-                        {categories.filter(cat => cat.parent_id).map((subcategory) => (
+                        {Array.isArray(categories) && categories.filter(cat => cat.parent_id).map((subcategory) => (
                           <MenuItem key={subcategory.id} value={subcategory.id}>
                             {subcategory.name}
                           </MenuItem>

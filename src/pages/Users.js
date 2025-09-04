@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import adminService, { adminApiClient } from '../services/adminService';
 import {
   Box,
   Typography,
@@ -54,11 +54,7 @@ function Users() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('/users', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await adminApiClient.get('/users');
         setUsers(response.data);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -144,11 +140,7 @@ function Users() {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         // Call backend API to delete user
-        await axios.delete(`/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        await adminApiClient.delete(`/users/${userId}`);
 
         // Update local state after successful deletion
         const updatedUsers = users.filter((user) => user.id !== userId);

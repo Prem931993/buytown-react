@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import adminService from '../services/adminService';
 
 function TaxConfig() {
   const [taxConfigs, setTaxConfigs] = useState([]);
@@ -19,8 +19,8 @@ function TaxConfig() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/config/tax-configs');
-      setTaxConfigs(response.data.configs || []);
+      const response = await adminService.config.getTaxConfigs();
+      setTaxConfigs(response.configs || []);
     } catch (err) {
       setError('Failed to load tax configurations');
     } finally {
@@ -43,7 +43,7 @@ function TaxConfig() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/config/tax-configs', formData);
+      await adminService.config.createTaxConfig(formData);
       setShowForm(false);
       setFormData({
         tax_name: '',
@@ -61,7 +61,7 @@ function TaxConfig() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this configuration?')) {
       try {
-        await axios.delete(`/config/tax-configs/${id}`);
+        await adminService.config.deleteTaxConfig(id);
         fetchTaxConfigs();
       } catch (err) {
         setError('Failed to delete tax configuration');

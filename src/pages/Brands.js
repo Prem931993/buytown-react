@@ -30,7 +30,7 @@ import {
   Close as CloseIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { adminApiClient } from '../services/adminService.js';
 
 function Brands() {
   useNavigate();
@@ -68,7 +68,7 @@ function Brands() {
     const fetchData = async () => {
       try {
         setSearchLoading(true);
-        const response = await axios.get('/brands', {
+        const response = await adminApiClient.get('/brands', {
           params: {
             page: pagination.currentPage,
             limit: 10,
@@ -139,14 +139,14 @@ function Brands() {
       
       if (currentItem) {
         // Update existing brand
-        await axios.put(`/brands/${currentItem.id}`, formDataToSend, {
+        await adminApiClient.put(`/brands/${currentItem.id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
         // Create new brand
-        await axios.post('/brands', formDataToSend, {
+        await adminApiClient.post('/brands', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -162,7 +162,7 @@ function Brands() {
       handleCloseForm();
       
       // Refresh the brands list
-      const response2 = await axios.get('/brands', {
+      const response2 = await adminApiClient.get('/brands', {
         params: {
           page: pagination.currentPage,
           limit: 10,
@@ -204,7 +204,7 @@ function Brands() {
 
   const handleDeleteConfirm = async () => {
     try {
-      await axios.delete(`/brands/${deleteItem.id}`);
+      await adminApiClient.delete(`/brands/${deleteItem.id}`);
       
       setSnackbar({
         open: true,
@@ -216,7 +216,7 @@ function Brands() {
       handleDeleteCancel();
       
       // Refresh the brands list
-      const response = await axios.get('/brands', {
+      const response = await adminApiClient.get('/brands', {
         params: {
           page: pagination.currentPage,
           limit: 10,
@@ -251,7 +251,7 @@ function Brands() {
       const formData = new FormData();
       formData.append('file', importFile);
       
-      const response = await axios.post('/brands/import', formData, {
+      const response = await adminApiClient.post('/brands/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -267,7 +267,7 @@ function Brands() {
       setImportFile(null);
       
       // Refresh the brands list
-      const response2 = await axios.get('/brands', {
+      const response2 = await adminApiClient.get('/brands', {
         params: {
           page: pagination.currentPage,
           limit: 10,

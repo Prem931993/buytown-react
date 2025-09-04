@@ -38,26 +38,26 @@ import {
   Sms,
   Email,
   ShoppingCart,
-  Assessment
+  Assessment,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
 const menuItems = [
-  { 
-    text: 'Dashboard', 
-    icon: <DashboardIcon />, 
+  {
+    text: 'Dashboard',
+    icon: <DashboardIcon />,
     path: '/',
     badge: null
   },
-  { 
-    text: 'Orders', 
-    icon: <ShoppingCart />, 
+  {
+    text: 'Orders',
+    icon: <ShoppingCart />,
     path: '/orders',
     badge: '12'
   },
-  { 
-    text: 'Products', 
-    icon: <Inventory />, 
+  {
+    text: 'Products',
+    icon: <Inventory />,
     path: '/products',
     badge: null
   },
@@ -85,42 +85,49 @@ const menuItems = [
     path: '/users',
     badge: null
   },
-  { 
-    text: 'Reports', 
-    icon: <Assessment />, 
+  {
+    text: 'Reports',
+    icon: <Assessment />,
     path: '/reports',
     badge: null
   },
-  { 
-    text: 'Delivery Management', 
-    icon: <LocalShipping />, 
+  {
+    text: 'Vehicle Management',
+    icon: <LocalShipping />,
+    path: '/vehicles',
+    badge: null
+  },
+  {
+    text: 'Delivery Settings',
+    icon: <LocalShipping />,
     path: '/delivery',
     badge: null
   },
-  { 
-    text: 'Tax Management', 
-    icon: <Receipt />, 
+  {
+    text: 'Tax Management',
+    icon: <Receipt />,
     path: '/tax',
     badge: null
   },
-  { 
-    text: 'Payment Gateway', 
-    icon: <Payment />, 
+  {
+    text: 'Payment Gateway',
+    icon: <Payment />,
     path: '/payment',
     badge: null
   },
-  { 
-    text: 'SMS Configuration', 
-    icon: <Sms />, 
+  {
+    text: 'SMS Configuration',
+    icon: <Sms />,
     path: '/sms',
     badge: null
   },
-  { 
-    text: 'Email Configuration', 
-    icon: <Email />, 
+  {
+    text: 'Email Configuration',
+    icon: <Email />,
     path: '/email',
     badge: null
   },
+
   {
     text: 'General',
     icon: <Settings />,
@@ -154,7 +161,7 @@ function Layout() {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-  
+
   const handleNotificationClick = (event) => {
     setNotificationAnchorEl(event.currentTarget);
   };
@@ -181,7 +188,7 @@ function Layout() {
           justifyContent: 'space-between',
         }}
       >
-        <Box 
+        <Box
           sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
           onClick={() => {
             navigate('/');
@@ -229,7 +236,7 @@ function Layout() {
           {menuItems.map((item) => {
             const hasChildren = item.children && item.children.length > 0;
             const isConfigurationActive = location.pathname.startsWith('/configuration');
-            
+
             return (
               <React.Fragment key={item.text}>
                 <ListItem disablePadding sx={{ mb: 1 }}>
@@ -277,7 +284,7 @@ function Layout() {
                     )}
                   </ListItemButton>
                 </ListItem>
-                
+
                 {/* Render children items */}
                 {hasChildren && !drawerCollapsed && (
                   <List component="div" disablePadding sx={{ pl: 4 }}>
@@ -379,7 +386,7 @@ function Layout() {
           >
             <MenuIcon />
           </IconButton>
-          
+
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
               {location.pathname === '/' ? 'Dashboard' :
@@ -391,6 +398,8 @@ function Layout() {
                location.pathname === '/orders' ? 'Orders Management' :
                location.pathname === '/reports' ? 'Reports & Analytics' :
                location.pathname === '/sms' ? 'SMS Configuration & OTP Management' :
+               location.pathname === '/email' ? 'Email Configuration' :
+
                location.pathname === '/general/settings' ? 'General Settings' :
                location.pathname === '/general/banner-upload' ? 'Banner Upload' : 'Admin Panel'}
             </Typography>
@@ -406,7 +415,7 @@ function Layout() {
                 <Notifications />
               </Badge>
             </IconButton>
-            
+
             <IconButton
               size="large"
               sx={{ color: 'text.secondary' }}
@@ -449,7 +458,7 @@ function Layout() {
               },
             }}
           >
-          
+
           <Menu
             id="notification-menu"
             anchorEl={notificationAnchorEl}
@@ -479,48 +488,48 @@ function Layout() {
                 Notifications
               </Typography>
             </Box>
-            
+
             <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
               <ListItemIcon>
                 <ShoppingCart sx={{ color: 'primary.main' }} />
               </ListItemIcon>
-              <ListItemText 
-                primary="New Order Received" 
+              <ListItemText
+                primary="New Order Received"
                 secondary="Order #ORD-008 has been placed"
                 primaryTypographyProps={{ fontWeight: 600 }}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </MenuItem>
-            
+
             <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
               <ListItemIcon>
                 <Inventory sx={{ color: 'error.main' }} />
               </ListItemIcon>
-              <ListItemText 
-                primary="Product Out of Stock" 
+              <ListItemText
+                primary="Product Out of Stock"
                 secondary="Samsung Galaxy S21 is out of stock"
                 primaryTypographyProps={{ fontWeight: 600 }}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </MenuItem>
-            
+
             <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
               <ListItemIcon>
                 <LocalShipping sx={{ color: 'info.main' }} />
               </ListItemIcon>
-              <ListItemText 
-                primary="Order Shipped" 
+              <ListItemText
+                primary="Order Shipped"
                 secondary="Order #ORD-005 has been shipped"
                 primaryTypographyProps={{ fontWeight: 600 }}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </MenuItem>
-            
+
             <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: 'primary.main', 
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'primary.main',
                   fontWeight: 600,
                   cursor: 'pointer',
                   '&:hover': { textDecoration: 'underline' }
@@ -563,7 +572,7 @@ function Layout() {
           </Menu>
         </Toolbar>
       </AppBar>
-      
+
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -609,7 +618,7 @@ function Layout() {
           {drawer}
         </Drawer>
       </Box>
-      
+
       <Box
         component="main"
         sx={{
