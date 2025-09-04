@@ -18,7 +18,7 @@ import Orders from './pages/Orders';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
 import Reports from './pages/Reports';
-import PlaceholderPage from './pages/PlaceholderPage';
+
 import VehicleManagement from './pages/VehicleManagement';
 import DeliverySettings from './pages/DeliverySettings';
 import Brands from './pages/Brands';

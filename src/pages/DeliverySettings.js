@@ -19,7 +19,7 @@ import {
   RadioButtonChecked as RadiusIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { adminService } from '../services/adminService';
+
 
 function DeliverySettings() {
   const [loading, setLoading] = useState(true);
