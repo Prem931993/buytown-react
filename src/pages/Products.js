@@ -34,7 +34,7 @@ import {
   FilterList as FilterIcon,
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
-import adminService, { adminApiClient } from '../services/adminService';
+import { adminApiClient } from '../services/adminService';
 
 function Products() {
   const [products, setProducts] = useState([]);
