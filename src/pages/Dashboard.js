@@ -22,6 +22,7 @@ import {
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  LocalShipping as VehicleIcon,
 } from '@mui/icons-material';
 import { adminService } from '../services/adminService';
 
@@ -38,6 +39,8 @@ function Dashboard() {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
   const [popularProducts, setPopularProducts] = useState([]);
+  const [mostUsedVehicles, setMostUsedVehicles] = useState([]);
+  const [topCustomers, setTopCustomers] = useState([]);
 
   // Format currency in INR
   const formatINR = (amount) => {
@@ -60,72 +63,60 @@ function Dashboard() {
         ordersResponse,
         lowStockResponse,
         recentSalesResponse,
-        popularProductsResponse
+        popularProductsResponse,
+        mostUsedVehiclesResponse,
+        topCustomersResponse
       ] = await Promise.all([
         adminService.dashboard.getSummary(),
         adminService.dashboard.getOrdersAwaitingConfirmation(),
         adminService.dashboard.getLowStockProducts(5),
         adminService.dashboard.getRecentSales(30),
-        adminService.dashboard.getPopularProducts(5)
+        adminService.dashboard.getPopularProducts(5),
+        adminService.dashboard.getMostUsedDeliveryVehicles(),
+        adminService.dashboard.getTopCustomers(5)
       ]);
 
       // Update stats
       setStats({
-        revenue: summaryResponse.totalRevenue || 0,
-        orders: summaryResponse.totalOrders || 0,
-        products: summaryResponse.totalProducts || 0,
-        users: summaryResponse.totalUsers || 0,
+        revenue: summaryResponse.data?.summary?.totalRevenue || 0,
+        orders: summaryResponse.data?.summary?.totalOrders || 0,
+        products: summaryResponse.data?.summary?.totalProducts || 0,
+        users: summaryResponse.data?.summary?.totalUsers || 0,
       });
 
       // Update pending orders
-      setPendingOrders(ordersResponse.orders || []);
+      setPendingOrders(ordersResponse.data?.count ? [ordersResponse.data] : []);
 
       // Update low stock products
-      setLowStockProducts(lowStockResponse.products || []);
+      setLowStockProducts(lowStockResponse.data?.products || []);
 
       // Update recent sales
-      setRecentSales(recentSalesResponse.sales || []);
+      setRecentSales(recentSalesResponse.data?.sales || []);
 
       // Update popular products
-      setPopularProducts(popularProductsResponse.products || []);
+      setPopularProducts(popularProductsResponse.data?.products || []);
+
+      // Update most used vehicles
+      setMostUsedVehicles(mostUsedVehiclesResponse.data?.vehicles || []);
+
+      // Update top customers
+      setTopCustomers(topCustomersResponse.data?.customers || []);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Fallback to mock data if API fails
+      // Set empty arrays for all data when API fails
       setStats({
-        revenue: 24580,
-        orders: 1254,
-        products: 567,
-        users: 3890,
+        revenue: 0,
+        orders: 0,
+        products: 0,
+        users: 0,
       });
-      setPendingOrders([
-        { id: 'ORD-7351', customer: 'John Doe', date: new Date(), amount: 245.99, status: 'Pending' },
-        { id: 'ORD-7352', customer: 'Jane Smith', date: new Date(), amount: 189.50, status: 'Pending' },
-        { id: 'ORD-7353', customer: 'Robert Johnson', date: new Date(), amount: 345.75, status: 'Pending' },
-        { id: 'ORD-7354', customer: 'Emily Davis', date: new Date(), amount: 129.99, status: 'Pending' },
-        { id: 'ORD-7355', customer: 'Michael Brown', date: new Date(), amount: 499.99, status: 'Pending' },
-      ]);
-      setLowStockProducts([
-        { id: 'PRD-1001', name: 'Wireless Earbuds', category: 'Electronics', stock: 3, status: 'Low Stock' },
-        { id: 'PRD-1002', name: 'Bluetooth Speaker', category: 'Electronics', stock: 0, status: 'Out of Stock' },
-        { id: 'PRD-1003', name: 'Smart Watch', category: 'Electronics', stock: 2, status: 'Low Stock' },
-        { id: 'PRD-1004', name: 'Phone Case', category: 'Accessories', stock: 5, status: 'Low Stock' },
-        { id: 'PRD-1005', name: 'USB-C Cable', category: 'Accessories', stock: 0, status: 'Out of Stock' },
-      ]);
-      setRecentSales([
-        { id: 'SALE-8001', customer: 'Alice Johnson', date: new Date(2023, 6, 15), amount: 329.99 },
-        { id: 'SALE-8002', customer: 'Bob Williams', date: new Date(2023, 6, 14), amount: 124.50 },
-        { id: 'SALE-8003', customer: 'Carol Martinez', date: new Date(2023, 6, 14), amount: 259.99 },
-        { id: 'SALE-8004', customer: 'David Anderson', date: new Date(2023, 6, 13), amount: 499.95 },
-        { id: 'SALE-8005', customer: 'Eva Wilson', date: new Date(2023, 6, 12), amount: 149.99 },
-      ]);
-      setPopularProducts([
-        { id: 'PRD-1001', name: 'Wireless Earbuds', category: 'Electronics', sales: 124 },
-        { id: 'PRD-1003', name: 'Smart Watch', category: 'Electronics', sales: 98 },
-        { id: 'PRD-1002', name: 'Bluetooth Speaker', category: 'Electronics', sales: 87 },
-        { id: 'PRD-1004', name: 'Phone Case', category: 'Accessories', sales: 76 },
-        { id: 'PRD-1005', name: 'USB-C Cable', category: 'Accessories', sales: 65 },
-      ]);
+      setPendingOrders([]);
+      setLowStockProducts([]);
+      setRecentSales([]);
+      setPopularProducts([]);
+      setMostUsedVehicles([]);
+      setTopCustomers([]);
     } finally {
       setLoading(false);
     }
@@ -550,6 +541,147 @@ function Dashboard() {
                           onClick={() => handleCardClick(`/products/${product.id}`)}
                           sx={{ cursor: 'pointer', bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' } }}
                         />
+                      </Box>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Most Used Vehicles */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, rgba(34, 197, 94, 0.05), transparent)' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                Most Used Vehicles
+              </Typography>
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
+                onClick={() => handleCardClick('/vehicles')}
+                sx={{ color: '#22c55e', '&:hover': { backgroundColor: 'rgba(34, 197, 94, 0.08)' } }}
+              >
+                View All
+              </Button>
+            </Box>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : (
+              <Box>
+                {mostUsedVehicles.length === 0 ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No vehicle usage data found.
+                    </Typography>
+                  </Box>
+                ) : (
+                  mostUsedVehicles.map((vehicle) => (
+                    <Box
+                      key={vehicle.id}
+                      sx={{
+                        p: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {vehicle.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {vehicle.id} • {vehicle.type} • {vehicle.usageCount} deliveries
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Avatar
+                          sx={{
+                            backgroundColor: '#22c55e',
+                            width: 32,
+                            height: 32,
+                          }}
+                        >
+                          <VehicleIcon sx={{ color: '#fff', fontSize: 16 }} />
+                        </Avatar>
+                      </Box>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Top Customers */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent)' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#ef4444' }}>
+                Top Customers
+              </Typography>
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
+                onClick={() => handleCardClick('/users')}
+                sx={{ color: '#ef4444', '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.08)' } }}
+              >
+                View All
+              </Button>
+            </Box>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : (
+              <Box>
+                {topCustomers.length === 0 ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No top customers found.
+                    </Typography>
+                  </Box>
+                ) : (
+                  topCustomers.map((customer) => (
+                    <Box
+                      key={customer.id}
+                      sx={{
+                        p: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {customer.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {customer.id} • {customer.totalOrders} orders
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600, mr: 1 }}>
+                          {formatINR(customer.totalSpent)}
+                        </Typography>
+                        <Avatar
+                          sx={{
+                            backgroundColor: '#ef4444',
+                            width: 32,
+                            height: 32,
+                          }}
+                        >
+                          <UserIcon sx={{ color: '#fff', fontSize: 16 }} />
+                        </Avatar>
                       </Box>
                     </Box>
                   ))

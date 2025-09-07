@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { adminService } from '../services/adminService.js';
 import {
   AppBar,
   Box,
@@ -39,6 +40,11 @@ import {
   Email,
   ShoppingCart,
   Assessment,
+  Business,
+  Tune,
+  Description,
+  DirectionsCar,
+  Route,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -69,13 +75,13 @@ const menuItems = [
   },
   {
     text: 'Brands',
-    icon: <CategoryIcon />,
+    icon: <Business />,
     path: '/brands',
     badge: null
   },
   {
     text: 'Variations',
-    icon: <CategoryIcon />,
+    icon: <Tune />,
     path: '/variations',
     badge: null
   },
@@ -93,13 +99,13 @@ const menuItems = [
   },
   {
     text: 'Vehicle Management',
-    icon: <LocalShipping />,
+    icon: <DirectionsCar />,
     path: '/vehicles',
     badge: null
   },
   {
     text: 'Delivery Settings',
-    icon: <LocalShipping />,
+    icon: <Route />,
     path: '/delivery',
     badge: null
   },
@@ -127,6 +133,12 @@ const menuItems = [
     path: '/email',
     badge: null
   },
+  {
+    text: 'Pages',
+    icon: <Description />,
+    path: '/pages',
+    badge: null
+  },
 
   {
     text: 'General',
@@ -145,6 +157,8 @@ function Layout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -173,6 +187,48 @@ function Layout() {
   const handleLogout = () => {
     logout();
     handleMenuClose();
+  };
+
+  // Notification functions
+  const fetchNotifications = async () => {
+    try {
+      const response = await adminService.notifications.getNotifications({ limit: 10 });
+      setNotifications(response.data || []);
+      const countResponse = await adminService.notifications.getUnreadCount();
+      setUnreadCount(countResponse.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await adminService.notifications.markAsRead(id);
+      // Refresh notifications after marking as read
+      fetchNotifications();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Helper function to get notification icon based on type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'order':
+        return <ShoppingCart sx={{ color: 'primary.main' }} />;
+      case 'product':
+        return <Inventory sx={{ color: 'error.main' }} />;
+      case 'shipping':
+        return <LocalShipping sx={{ color: 'info.main' }} />;
+      case 'user':
+        return <People sx={{ color: 'success.main' }} />;
+      default:
+        return <Notifications sx={{ color: 'primary.main' }} />;
+    }
   };
 
   const drawer = (
@@ -399,6 +455,7 @@ function Layout() {
                location.pathname === '/reports' ? 'Reports & Analytics' :
                location.pathname === '/sms' ? 'SMS Configuration & OTP Management' :
                location.pathname === '/email' ? 'Email Configuration' :
+               location.pathname === '/pages' ? 'Pages Management' :
 
                location.pathname === '/general/settings' ? 'General Settings' :
                location.pathname === '/general/banner-upload' ? 'Banner Upload' : 'Admin Panel'}
@@ -411,7 +468,7 @@ function Layout() {
               sx={{ color: 'text.secondary' }}
               onClick={handleNotificationClick}
             >
-              <Badge badgeContent={3} color="error">
+              <Badge badgeContent={unreadCount} color="error">
                 <Notifications />
               </Badge>
             </IconButton>
@@ -489,41 +546,70 @@ function Layout() {
               </Typography>
             </Box>
 
-            <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
-              <ListItemIcon>
-                <ShoppingCart sx={{ color: 'primary.main' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary="New Order Received"
-                secondary="Order #ORD-008 has been placed"
-                primaryTypographyProps={{ fontWeight: 600 }}
-                secondaryTypographyProps={{ variant: 'body2' }}
-              />
-            </MenuItem>
-
-            <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
-              <ListItemIcon>
-                <Inventory sx={{ color: 'error.main' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary="Product Out of Stock"
-                secondary="Samsung Galaxy S21 is out of stock"
-                primaryTypographyProps={{ fontWeight: 600 }}
-                secondaryTypographyProps={{ variant: 'body2' }}
-              />
-            </MenuItem>
-
-            <MenuItem onClick={handleNotificationClose} sx={{ py: 2 }}>
-              <ListItemIcon>
-                <LocalShipping sx={{ color: 'info.main' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary="Order Shipped"
-                secondary="Order #ORD-005 has been shipped"
-                primaryTypographyProps={{ fontWeight: 600 }}
-                secondaryTypographyProps={{ variant: 'body2' }}
-              />
-            </MenuItem>
+            {notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <MenuItem
+                  key={notification.id}
+                  onClick={() => {
+                    if (!notification.is_read) {
+                      markAsRead(notification.id);
+                    }
+                    handleNotificationClose();
+                  }}
+                  sx={{
+                    py: 2,
+                    backgroundColor: !notification.is_read ? 'rgba(99, 102, 241, 0.04)' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: !notification.is_read ? 'rgba(99, 102, 241, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                    }
+                  }}
+                >
+                  <ListItemIcon>
+                    {getNotificationIcon(notification.type)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={notification.title}
+                    secondary={notification.message}
+                    primaryTypographyProps={{
+                      fontWeight: !notification.is_read ? 700 : 600,
+                      variant: 'body1'
+                    }}
+                    secondaryTypographyProps={{
+                      variant: 'body2',
+                      sx: {
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }
+                    }}
+                  />
+                  {!notification.is_read && (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: 'primary.main',
+                        ml: 1,
+                      }}
+                    />
+                  )}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled sx={{ py: 4, textAlign: 'center' }}>
+                <ListItemText
+                  primary="No notifications"
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    color: 'text.secondary',
+                    textAlign: 'center'
+                  }}
+                />
+              </MenuItem>
+            )}
 
             <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
               <Typography

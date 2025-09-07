@@ -32,6 +32,8 @@ import TaxConfig from './pages/TaxConfig';
 import PaymentConfig from './pages/PaymentConfig';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Pages from './pages/Pages';
+import PageDetail from './pages/PageDetail';
 
 const theme = createTheme({
   palette: {
@@ -221,6 +223,9 @@ function App() {
               <Route path="forgot-password-admin" element={<ForgotPassword />} />
               <Route path="general/settings" element={<GeneralSettings />} />
               <Route path="general/banner-upload" element={<BannerUpload />} />
+              <Route path="pages" element={<Pages />} />
+              <Route path="pages/create" element={<PageDetail />} />
+              <Route path="pages/edit/:id" element={<PageDetail />} />
             </Route>
           </Routes>
         </Router>

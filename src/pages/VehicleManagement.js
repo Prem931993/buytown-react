@@ -6,51 +6,44 @@ import {
   CardContent,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   CircularProgress,
   Alert,
   Snackbar,
   Fab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   DirectionsCar as CarIcon,
+  DirectionsBike as BikeIcon,
   LocalShipping as TruckIcon,
-  TwoWheeler as BikeIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
+  ExpandMore as ExpandMoreIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
+import { adminService } from '../services/adminService';
+
 function VehicleManagement() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formData, setFormData] = useState({
-    vehicle_number: '',
     vehicle_type: '',
-    capacity: '',
-    driver_name: '',
-    driver_phone: '',
-    status: 'active',
+    rate_per_km: '',
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -58,66 +51,36 @@ function VehicleManagement() {
     severity: 'success',
   });
 
-  // Vehicle type icons
+  // Function to get icon based on vehicle type
   const getVehicleIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'truck':
-        return <TruckIcon />;
-      case 'bike':
-        return <BikeIcon />;
-      default:
-        return <CarIcon />;
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('two wheeler') || lowerType.includes('bike') || lowerType.includes('motorcycle')) {
+      return <BikeIcon sx={{ mr: 2, color: 'primary.main' }} />;
     }
+    if (lowerType.includes('cargo') || lowerType.includes('truck') || lowerType.includes('lorry')) {
+      return <TruckIcon sx={{ mr: 2, color: 'primary.main' }} />;
+    }
+    if (lowerType.includes('pickup') || lowerType.includes('ace') || lowerType.includes('eicher') || lowerType.includes('tata') || lowerType.includes('407')) {
+      return <CarIcon sx={{ mr: 2, color: 'primary.main' }} />;
+    }
+    // Default icon
+    return <CarIcon sx={{ mr: 2, color: 'primary.main' }} />;
   };
 
-  // Status colors
-  const getStatusColor = (status) => {
-    return status === 'active' ? 'success' : 'error';
-  };
-
-  // Fetch vehicles
+  // Fetch vehicles with delivery persons
   const fetchVehicles = async () => {
     try {
       setLoading(true);
-      // For now, using mock data since the API might not be fully implemented
-      const mockVehicles = [
-        {
-          id: 1,
-          vehicle_number: 'MH12AB1234',
-          vehicle_type: 'Truck',
-          capacity: '5000kg',
-          driver_name: 'Rajesh Kumar',
-          driver_phone: '+91-9876543210',
-          status: 'active',
-          created_at: new Date(),
-        },
-        {
-          id: 2,
-          vehicle_number: 'MH12CD5678',
-          vehicle_type: 'Bike',
-          capacity: '50kg',
-          driver_name: 'Amit Singh',
-          driver_phone: '+91-9876543211',
-          status: 'active',
-          created_at: new Date(),
-        },
-        {
-          id: 3,
-          vehicle_number: 'MH12EF9012',
-          vehicle_type: 'Car',
-          capacity: '200kg',
-          driver_name: 'Priya Sharma',
-          driver_phone: '+91-9876543212',
-          status: 'inactive',
-          created_at: new Date(),
-        },
-      ];
-      setVehicles(mockVehicles);
+      const response = await adminService.vehicles.getVehiclesWithDeliveryPersons();
+      if (!response || !Array.isArray(response)) {
+        throw new Error('Invalid response data');
+      }
+      setVehicles(response);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to fetch vehicles',
+        message: 'Failed to fetch vehicles with delivery persons',
         severity: 'error',
       });
     } finally {
@@ -134,7 +97,7 @@ function VehicleManagement() {
     try {
       if (editingVehicle) {
         // Update vehicle
-        console.log('Updating vehicle:', editingVehicle.id, formData);
+        await adminService.vehicles.update(editingVehicle.id, formData);
         setSnackbar({
           open: true,
           message: 'Vehicle updated successfully',
@@ -142,7 +105,7 @@ function VehicleManagement() {
         });
       } else {
         // Create new vehicle
-        console.log('Creating vehicle:', formData);
+        await adminService.vehicles.create(formData);
         setSnackbar({
           open: true,
           message: 'Vehicle created successfully',
@@ -165,7 +128,7 @@ function VehicleManagement() {
   const handleDelete = async (vehicleId) => {
     if (window.confirm('Are you sure you want to delete this vehicle?')) {
       try {
-        console.log('Deleting vehicle:', vehicleId);
+        await adminService.vehicles.delete(vehicleId);
         setSnackbar({
           open: true,
           message: 'Vehicle deleted successfully',
@@ -187,12 +150,8 @@ function VehicleManagement() {
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
     setFormData({
-      vehicle_number: vehicle.vehicle_number || '',
       vehicle_type: vehicle.vehicle_type || '',
-      capacity: vehicle.capacity || '',
-      driver_name: vehicle.driver_name || '',
-      driver_phone: vehicle.driver_phone || '',
-      status: vehicle.status || 'active',
+      rate_per_km: vehicle.rate_per_km || '',
     });
     setOpen(true);
   };
@@ -201,12 +160,8 @@ function VehicleManagement() {
   const handleAdd = () => {
     setEditingVehicle(null);
     setFormData({
-      vehicle_number: '',
       vehicle_type: '',
-      capacity: '',
-      driver_name: '',
-      driver_phone: '',
-      status: 'active',
+      rate_per_km: '',
     });
     setOpen(true);
   };
@@ -216,12 +171,8 @@ function VehicleManagement() {
     setOpen(false);
     setEditingVehicle(null);
     setFormData({
-      vehicle_number: '',
       vehicle_type: '',
-      capacity: '',
-      driver_name: '',
-      driver_phone: '',
-      status: 'active',
+      rate_per_km: '',
     });
   };
 
@@ -271,54 +222,24 @@ function VehicleManagement() {
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ActiveIcon sx={{ mr: 1, color: 'success.main' }} />
+                <PersonIcon sx={{ mr: 1, color: 'success.main' }} />
                 <Typography variant="h6" color="text.secondary">
-                  Active Vehicles
+                  Total Delivery Persons
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {vehicles.filter(v => v.status === 'active').length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TruckIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="h6" color="text.secondary">
-                  Trucks
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {vehicles.filter(v => v.vehicle_type === 'Truck').length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <BikeIcon sx={{ mr: 1, color: 'info.main' }} />
-                <Typography variant="h6" color="text.secondary">
-                  Bikes
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {vehicles.filter(v => v.vehicle_type === 'Bike').length}
+                {vehicles.reduce((total, vehicle) => total + (vehicle.delivery_person_count || 0), 0)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Vehicles Table */}
+      {/* Vehicles List */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Vehicle List
+            Vehicle Types & Delivery Charges
           </Typography>
 
           {loading ? (
@@ -326,144 +247,122 @@ function VehicleManagement() {
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Vehicle</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Capacity</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Driver</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {vehicles.map((vehicle) => (
-                    <TableRow key={vehicle.id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          {getVehicleIcon(vehicle.vehicle_type)}
-                          <Typography sx={{ ml: 1, fontWeight: 500 }}>
-                            {vehicle.vehicle_number}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>{vehicle.vehicle_type}</TableCell>
-                      <TableCell>{vehicle.capacity}</TableCell>
-                      <TableCell>{vehicle.driver_name}</TableCell>
-                      <TableCell>{vehicle.driver_phone}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={vehicle.status}
-                          color={getStatusColor(vehicle.status)}
-                          size="small"
-                          icon={vehicle.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleEdit(vehicle)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(vehicle.id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            vehicles.map((vehicle) => (
+              <Accordion key={vehicle.id} sx={{ mb: 1 }}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{
+                    '&:hover': { backgroundColor: 'action.hover' },
+                    borderRadius: 1,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      {getVehicleIcon(vehicle.vehicle_type)}
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {vehicle.vehicle_type}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          ₹{vehicle.rate_per_km}/km
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Chip
+                        label={`${vehicle.delivery_person_count || 0} Delivery Person${vehicle.delivery_person_count !== 1 ? 's' : ''}`}
+                        color="primary"
+                        size="small"
+                      />
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(vehicle);
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(vehicle.id);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                    Assigned Delivery Persons ({vehicle.delivery_persons?.length || 0})
+                  </Typography>
+                  {vehicle.delivery_persons && vehicle.delivery_persons.length > 0 ? (
+                    <List>
+                      {vehicle.delivery_persons.map((person) => (
+                        <ListItem key={person.id}>
+                          <ListItemText
+                            primary={person.name}
+                            secondary={`${person.email} • ${person.phone}`}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No delivery persons assigned to this vehicle type yet.
+                    </Typography>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            ))
           )}
         </CardContent>
       </Card>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
           {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Vehicle Number"
-                value={formData.vehicle_number}
-                onChange={(e) => handleInputChange('vehicle_number', e.target.value)}
-                placeholder="e.g., MH12AB1234"
+                label="Vehicle Type"
+                value={formData.vehicle_type}
+                onChange={(e) => handleInputChange('vehicle_type', e.target.value)}
+                placeholder="e.g., Two Wheeler, Cargo, Tata Ace"
+                required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Vehicle Type</InputLabel>
-                <Select
-                  value={formData.vehicle_type}
-                  onChange={(e) => handleInputChange('vehicle_type', e.target.value)}
-                  label="Vehicle Type"
-                >
-                  <MenuItem value="Car">Car</MenuItem>
-                  <MenuItem value="Truck">Truck</MenuItem>
-                  <MenuItem value="Bike">Bike</MenuItem>
-                  <MenuItem value="Van">Van</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Capacity"
-                value={formData.capacity}
-                onChange={(e) => handleInputChange('capacity', e.target.value)}
-                placeholder="e.g., 5000kg"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                  label="Status"
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Driver Name"
-                value={formData.driver_name}
-                onChange={(e) => handleInputChange('driver_name', e.target.value)}
-                placeholder="Enter driver name"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Driver Phone"
-                value={formData.driver_phone}
-                onChange={(e) => handleInputChange('driver_phone', e.target.value)}
-                placeholder="+91-9876543210"
+                label="Delivery Charge (₹/km)"
+                type="number"
+                value={formData.rate_per_km}
+                onChange={(e) => handleInputChange('rate_per_km', e.target.value)}
+                placeholder="e.g., 15.00"
+                required
+                inputProps={{ min: 0, step: 0.01 }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            color="primary"
+            disabled={!formData.vehicle_type || !formData.rate_per_km}
+          >
             {editingVehicle ? 'Update' : 'Create'}
           </Button>
         </DialogActions>

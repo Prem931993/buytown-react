@@ -35,11 +35,13 @@ import {
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import { adminApiClient } from '../services/adminService';
+import adminService from '../services/adminService';
 
 function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -146,10 +148,10 @@ function Products() {
       try {
         setLoading(true);
         
-        // Fetch categories
+        // Fetch categories for dropdown
         try {
-          const categoriesResponse = await adminApiClient.get('/categories');
-          setCategories(categoriesResponse.data.categories || []);
+          const categoriesResponse = await adminService.categories.getForDropdown();
+          setCategories(categoriesResponse.categories || []);
         } catch (error) {
           console.error('Error fetching categories:', error);
           // Fallback to mock data if API fails
@@ -158,6 +160,21 @@ function Products() {
             { id: 2, name: 'Audio' },
             { id: 3, name: 'Wearables' },
             { id: 4, name: 'Accessories' }
+          ]);
+        }
+
+        // Fetch brands for dropdown
+        try {
+          const brandsResponse = await adminService.brands.getForDropdown();
+          setBrands(brandsResponse.brands || []);
+        } catch (error) {
+          console.error('Error fetching brands:', error);
+          // Fallback to mock data if API fails
+          setBrands([
+            { id: 1, name: 'Apple' },
+            { id: 2, name: 'Samsung' },
+            { id: 3, name: 'Sony' },
+            { id: 4, name: 'Dell' }
           ]);
         }
         
@@ -316,8 +333,8 @@ function Products() {
                 >
                   <MenuItem value="">All Categories</MenuItem>
                   {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -402,16 +419,17 @@ function Products() {
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel>Brand</InputLabel>
-                <Select 
-                  label="Brand" 
+                <Select
+                  label="Brand"
                   value={filters.brand}
                   onChange={(e) => setFilters({...filters, brand: e.target.value})}
                 >
                   <MenuItem value="">All Brands</MenuItem>
-                  <MenuItem value="Apple">Apple</MenuItem>
-                  <MenuItem value="Samsung">Samsung</MenuItem>
-                  <MenuItem value="Sony">Sony</MenuItem>
-                  <MenuItem value="Dell">Dell</MenuItem>
+                  {brands.map((brand) => (
+                    <MenuItem key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

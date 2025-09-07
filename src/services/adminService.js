@@ -137,6 +137,10 @@ export const adminService = {
       const response = await adminApiClient.get('/brands');
       return response.data;
     },
+    getForDropdown: async () => {
+      const response = await adminApiClient.get('/brands/dropdown');
+      return response.data;
+    },
     getById: async (id) => {
       const response = await adminApiClient.get(`/brands/${id}`);
       return response.data;
@@ -165,8 +169,12 @@ export const adminService = {
 
   // Category operations
   categories: {
-    getAll: async () => {
-      const response = await adminApiClient.get('/categories');
+    getAll: async (params = {}) => {
+      const response = await adminApiClient.get('/categories', { params });
+      return response.data;
+    },
+    getForDropdown: async () => {
+      const response = await adminApiClient.get('/categories/dropdown');
       return response.data;
     },
     getRoot: async () => {
@@ -245,6 +253,10 @@ export const adminService = {
       const response = await adminApiClient.get('/variations');
       return response.data;
     },
+    getForDropdown: async () => {
+      const response = await adminApiClient.get('/variations/dropdown');
+      return response.data;
+    },
   },
 
   // SMS operations
@@ -316,6 +328,11 @@ export const adminService = {
     // Get most used delivery vehicles
     getMostUsedDeliveryVehicles: async () => {
       const response = await adminApiClient.get('/dashboard/delivery-vehicles');
+      return response.data;
+    },
+    // Get top customers
+    getTopCustomers: async (limit = 10) => {
+      const response = await adminApiClient.get(`/dashboard/top-customers?limit=${limit}`);
       return response.data;
     },
     // Get total products count
@@ -445,6 +462,10 @@ export const adminService = {
       const response = await adminApiClient.get('/vehicles');
       return response.data;
     },
+    getVehiclesWithDeliveryPersons: async () => {
+      const response = await adminApiClient.get('/vehicles/with-delivery-persons');
+      return response.data;
+    },
     getById: async (id) => {
       const response = await adminApiClient.get(`/vehicles/${id}`);
       return response.data;
@@ -471,6 +492,86 @@ export const adminService = {
     },
     updateSettings: async (settingsData) => {
       const response = await adminApiClient.put('/delivery/settings', settingsData);
+      return response.data;
+    },
+  },
+
+  // Pages operations
+  pages: {
+    getAll: async () => {
+      const response = await adminApiClient.get('/pages');
+      return response.data;
+    },
+    getById: async (id) => {
+      const response = await adminApiClient.get(`/pages/${id}`);
+      return response.data;
+    },
+    create: async (pageData) => {
+      const response = await adminApiClient.post('/pages', pageData);
+      return response.data;
+    },
+    update: async (id, pageData) => {
+      const response = await adminApiClient.put(`/pages/${id}`, pageData);
+      return response.data;
+    },
+    delete: async (id) => {
+      const response = await adminApiClient.delete(`/pages/${id}`);
+      return response.data;
+    },
+    getPublished: async () => {
+      const response = await adminApiClient.get('/pages/published');
+      return response.data;
+    },
+    getDrafts: async () => {
+      const response = await adminApiClient.get('/pages/drafts');
+      return response.data;
+    },
+  },
+
+  // Notification operations
+  notifications: {
+    // Get notifications
+    getNotifications: async (params = {}) => {
+      const response = await adminApiClient.get('/notifications', { params });
+      return response.data;
+    },
+    // Mark notification as read
+    markAsRead: async (notificationId) => {
+      const response = await adminApiClient.put(`/notifications/${notificationId}/read`);
+      return response.data;
+    },
+    // Get unread notification count
+    getUnreadCount: async () => {
+      const response = await adminApiClient.get('/notifications/unread-count');
+      return response.data;
+    },
+  },
+
+  // Order operations
+  orders: {
+    // Get all orders
+    getAll: async (params = {}) => {
+      const response = await adminApiClient.get('/orders', { params });
+      return response.data;
+    },
+    // Get order by ID
+    getById: async (orderId) => {
+      const response = await adminApiClient.get(`/orders/${orderId}`);
+      return response.data;
+    },
+    // Update order status
+    updateStatus: async (orderId, status) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/status`, { status });
+      return response.data;
+    },
+    // Get orders by status
+    getByStatus: async (status) => {
+      const response = await adminApiClient.get(`/orders/status/${status}`);
+      return response.data;
+    },
+    // Get order statistics
+    getStatistics: async () => {
+      const response = await adminApiClient.get('/orders/statistics');
       return response.data;
     },
   },

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 import {
   Box,
   Typography,
@@ -29,6 +31,13 @@ import {
   Delete as DeleteIcon,
   Remove as RemoveIcon,
   CloudUpload as CloudUploadIcon,
+  FormatBold,
+  FormatItalic,
+  FormatListBulleted,
+  FormatListNumbered,
+  FormatStrikethrough,
+  Undo,
+  Redo,
 } from '@mui/icons-material';
 
 import adminService from '../services/adminService';
@@ -80,65 +89,71 @@ function ProductDetail() {
     severity: 'success',
   });
 
+  // Initialize TipTap editor
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: formData.description,
+    onUpdate: ({ editor }) => {
+      setFormData(prev => ({
+        ...prev,
+        description: editor.getHTML(),
+      }));
+    },
+  });
+
+  // Update editor content when formData.description changes
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch categories
-        try {
-          const categoriesResponse = await adminService.categories.getAll();
-          // Ensure we always have an array
-          const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse :
-                                (categoriesResponse?.data && Array.isArray(categoriesResponse.data)) ? categoriesResponse.data :
-                                [];
-          setCategories(categoriesData);
-        } catch (error) {
-          console.error('Error fetching categories:', error);
-          // Fallback to mock data if API fails
-          setCategories([
-            { id: 1, name: 'Electronics' },
-            { id: 2, name: 'Audio' },
-            { id: 3, name: 'Wearables' },
-            { id: 4, name: 'Accessories' }
-          ]);
-        }
+    if (editor && formData.description !== editor.getHTML()) {
+      editor.commands.setContent(formData.description || '');
+    }
+  }, [formData.description, editor]);
 
-        // Fetch brands
+    useEffect(() => {
+      const fetchData = async () => {
         try {
-          const brandsResponse = await adminService.brands.getAll();
-          // Ensure we always have an array
-          const brandsData = Array.isArray(brandsResponse) ? brandsResponse :
-                            (brandsResponse?.data && Array.isArray(brandsResponse.data)) ? brandsResponse.data :
-                            [];
-          setBrands(brandsData);
-        } catch (error) {
-          console.error('Error fetching brands:', error);
-          // Fallback to mock data if API fails
-          setBrands([
-            { id: 1, name: 'Samsung' },
-            { id: 2, name: 'Apple' },
-            { id: 3, name: 'Sony' },
-            { id: 4, name: 'Dell' }
-          ]);
-        }
+          // Fetch categories
+        try {
+            const categoriesResponse = await adminService.categories.getForDropdown();
+            setCategories(categoriesResponse.categories || []);
 
-        // Fetch variations
-        try {
-          const variationsResponse = await adminService.variations.getAll();
-          // Ensure we always have an array
-          const variationsData = Array.isArray(variationsResponse) ? variationsResponse :
-                                (variationsResponse?.data && Array.isArray(variationsResponse.data)) ? variationsResponse.data :
-                                [];
-          setVariations(variationsData);
-        } catch (error) {
-          console.error('Error fetching variations:', error);
-          // Fallback to mock data if API fails
-          setVariations([
-            { id: 1, label: 'Color', value: 'Red' },
-            { id: 2, label: 'Color', value: 'Blue' },
-            { id: 3, label: 'Size', value: 'Small' },
-            { id: 4, label: 'Size', value: 'Large' }
-          ]);
-        }
+          } catch (error) {
+            console.error('Error fetching categories:', error);
+            setCategories([
+              { id: 1, name: 'Electronics' },
+              { id: 2, name: 'Audio' },
+              { id: 3, name: 'Wearables' },
+              { id: 4, name: 'Accessories' }
+            ]);
+          }
+
+          // Fetch brands
+          try {
+            const brandsResponse = await adminService.brands.getForDropdown();
+            setBrands(brandsResponse.brands || []);
+
+          } catch (error) {
+            console.error('Error fetching brands:', error);
+            setBrands([
+              { id: 1, name: 'Samsung' },
+              { id: 2, name: 'Apple' },
+              { id: 3, name: 'Sony' },
+              { id: 4, name: 'Dell' }
+            ]);
+          }
+
+          // Fetch variations
+          try {
+            const variationsResponse = await adminService.variations.getForDropdown();
+            setVariations(variationsResponse.variations || []);
+          } catch (error) {
+            console.error('Error fetching variations:', error);
+            setVariations([
+              { id: 1, label: 'Color', value: 'Red' },
+              { id: 2, label: 'Color', value: 'Blue' },
+              { id: 3, label: 'Size', value: 'Small' },
+              { id: 4, label: 'Size', value: 'Large' }
+            ]);
+          }
 
         // If in edit mode, fetch product details
         if (isEditMode) {
@@ -537,15 +552,104 @@ function ProductDetail() {
                       value={formData.sku_code}
                       onChange={handleInputChange}
                     />
-                    <TextField
-                      fullWidth
-                      label="Description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      multiline
-                      rows={4}
-                    />
+                    <Box>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        Description
+                      </Typography>
+                      {/* Editor Toolbar */}
+                      <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().toggleBold().run()}
+                          sx={{
+                            backgroundColor: editor?.isActive('bold') ? 'primary.main' : 'transparent',
+                            color: editor?.isActive('bold') ? 'white' : 'inherit',
+                            '&:hover': { backgroundColor: editor?.isActive('bold') ? 'primary.dark' : 'grey.100' }
+                          }}
+                        >
+                          <FormatBold fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().toggleItalic().run()}
+                          sx={{
+                            backgroundColor: editor?.isActive('italic') ? 'primary.main' : 'transparent',
+                            color: editor?.isActive('italic') ? 'white' : 'inherit',
+                            '&:hover': { backgroundColor: editor?.isActive('italic') ? 'primary.dark' : 'grey.100' }
+                          }}
+                        >
+                          <FormatItalic fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().toggleStrike().run()}
+                          sx={{
+                            backgroundColor: editor?.isActive('strike') ? 'primary.main' : 'transparent',
+                            color: editor?.isActive('strike') ? 'white' : 'inherit',
+                            '&:hover': { backgroundColor: editor?.isActive('strike') ? 'primary.dark' : 'grey.100' }
+                          }}
+                        >
+                          <FormatStrikethrough fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                          sx={{
+                            backgroundColor: editor?.isActive('bulletList') ? 'primary.main' : 'transparent',
+                            color: editor?.isActive('bulletList') ? 'white' : 'inherit',
+                            '&:hover': { backgroundColor: editor?.isActive('bulletList') ? 'primary.dark' : 'grey.100' }
+                          }}
+                        >
+                          <FormatListBulleted fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                          sx={{
+                            backgroundColor: editor?.isActive('orderedList') ? 'primary.main' : 'transparent',
+                            color: editor?.isActive('orderedList') ? 'white' : 'inherit',
+                            '&:hover': { backgroundColor: editor?.isActive('orderedList') ? 'primary.dark' : 'grey.100' }
+                          }}
+                        >
+                          <FormatListNumbered fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().undo().run()}
+                          disabled={!editor?.can().undo()}
+                        >
+                          <Undo fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => editor?.chain().focus().redo().run()}
+                          disabled={!editor?.can().redo()}
+                        >
+                          <Redo fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      {/* Editor Content */}
+                      <Paper
+                        sx={{
+                          border: '1px solid #ccc',
+                          borderRadius: 1,
+                          minHeight: 120,
+                          p: 2,
+                          '&:focus-within': {
+                            borderColor: 'primary.main',
+                            boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)',
+                          }
+                        }}
+                      >
+                        <EditorContent
+                          editor={editor}
+                          style={{
+                            minHeight: 100,
+                            outline: 'none',
+                          }}
+                        />
+                      </Paper>
+                    </Box>
                   </Box>
                 </Box>
                 
@@ -721,7 +825,7 @@ function ProductDetail() {
                         onChange={handleInputChange}
                       >
                         <MenuItem value="">Select Brand</MenuItem>
-                        {brands.map((brand) => (
+                        {Array.isArray(brands) && brands.map((brand) => (
                           <MenuItem key={brand.id} value={brand.id}>
                             {brand.name}
                           </MenuItem>
@@ -738,9 +842,9 @@ function ProductDetail() {
                         onChange={handleInputChange}
                       >
                         <MenuItem value="">Select Variation</MenuItem>
-                        {variations.map((variation) => (
+                        {Array.isArray(variations) && variations.map((variation) => (
                           <MenuItem key={variation.id} value={variation.id}>
-                            {variation.name}
+                            {variation.label || variation.name} - {variation.value}
                           </MenuItem>
                         ))}
                       </Select>

@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../services/adminService';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  TextField,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Snackbar,
+  Alert,
+  Tooltip
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Percent as PercentIcon,
+} from '@mui/icons-material';
 
 function TaxConfig() {
   const [taxConfigs, setTaxConfigs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   const [formData, setFormData] = useState({
     tax_name: '',
     tax_rate: '',
@@ -16,15 +47,15 @@ function TaxConfig() {
 
   // Fetch tax configurations
   const fetchTaxConfigs = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const response = await adminService.config.getTaxConfigs();
       setTaxConfigs(response.configs || []);
     } catch (err) {
-      setError('Failed to load tax configurations');
-    } finally {
-      setLoading(false);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load tax configurations',
+        severity: 'error',
+      });
     }
   };
 
@@ -53,8 +84,17 @@ function TaxConfig() {
         description: ''
       });
       fetchTaxConfigs();
+      setSnackbar({
+        open: true,
+        message: 'Tax configuration created successfully',
+        severity: 'success',
+      });
     } catch (err) {
-      setError('Failed to create tax configuration');
+      setSnackbar({
+        open: true,
+        message: 'Failed to create tax configuration',
+        severity: 'error',
+      });
     }
   };
 
@@ -63,158 +103,269 @@ function TaxConfig() {
       try {
         await adminService.config.deleteTaxConfig(id);
         fetchTaxConfigs();
+        setSnackbar({
+          open: true,
+          message: 'Tax configuration deleted successfully',
+          severity: 'success',
+        });
       } catch (err) {
-        setError('Failed to delete tax configuration');
+        setSnackbar({
+          open: true,
+          message: 'Failed to delete tax configuration',
+          severity: 'error',
+        });
       }
     }
   };
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false,
+    });
+  };
+
+  const filteredTaxConfigs = taxConfigs.filter((config) => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        config.tax_name?.toLowerCase().includes(query) ||
+        config.description?.toLowerCase().includes(query) ||
+        config.tax_type?.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Tax Configuration Management</h2>
-        <button
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+          Tax Configuration Management
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={() => setShowForm(!showForm)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
+          sx={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+            },
           }}
         >
           {showForm ? 'Cancel' : 'Add Configuration'}
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      {loading && <p>Loading configurations...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search tax configurations..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
+                }}
+                variant="outlined"
+                size="small"
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
-          <h3>Add Tax Configuration</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-            <div>
-              <label>Tax Name:</label>
-              <input
-                type="text"
-                name="tax_name"
-                value={formData.tax_name}
-                onChange={handleInputChange}
-                required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              />
-            </div>
-            <div>
-              <label>Tax Rate (%):</label>
-              <input
-                type="number"
-                name="tax_rate"
-                value={formData.tax_rate}
-                onChange={handleInputChange}
-                step="0.01"
-                required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              />
-            </div>
-            <div>
-              <label>Tax Type:</label>
-              <select
-                name="tax_type"
-                value={formData.tax_type}
-                onChange={handleInputChange}
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed Amount</option>
-              </select>
-            </div>
-            <div>
-              <label>Description:</label>
-              <input
-                type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              />
-            </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label>
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                />
-                Active
-              </label>
-            </div>
-          </div>
-          <button
-            type="submit"
-            style={{
-              marginTop: '15px',
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Save Configuration
-          </button>
-        </form>
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Add New Tax Configuration
+            </Typography>
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Tax Name"
+                    name="tax_name"
+                    value={formData.tax_name}
+                    onChange={handleInputChange}
+                    required
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Tax Rate (%)"
+                    name="tax_rate"
+                    type="number"
+                    value={formData.tax_rate}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    required
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Tax Type"
+                    name="tax_type"
+                    value={formData.tax_type}
+                    onChange={handleInputChange}
+                    size="small"
+                  >
+                    <option value="percentage">Percentage</option>
+                    <option value="fixed">Fixed Amount</option>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Status"
+                    name="is_active"
+                    value={formData.is_active}
+                    onChange={(e) => setFormData({...formData, is_active: e.target.value === 'true'})}
+                    size="small"
+                  >
+                    <option value={true}>Active</option>
+                    <option value={false}>Inactive</option>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    multiline
+                    rows={2}
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      sx={{
+                        background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)',
+                        },
+                      }}
+                    >
+                      Save Configuration
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      onClick={() => setShowForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Grid>
+              </Grid>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <h3>Existing Configurations</h3>
-      {taxConfigs.length === 0 ? (
-        <p>No tax configurations found.</p>
-      ) : (
-        <table border="1" cellPadding="8" cellSpacing="0" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8f9fa' }}>
-              <th>ID</th>
-              <th>Tax Name</th>
-              <th>Tax Rate (%)</th>
-              <th>Tax Type</th>
-              <th>Active</th>
-              <th>Description</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {taxConfigs.map((config) => (
-              <tr key={config.id}>
-                <td>{config.id}</td>
-                <td>{config.tax_name}</td>
-                <td>{config.tax_rate}</td>
-                <td>{config.tax_type}</td>
-                <td>{config.is_active ? 'Yes' : 'No'}</td>
-                <td>{config.description || '-'}</td>
-                <td>
-                  <button
-                    onClick={() => handleDelete(config.id)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+              <TableCell>ID</TableCell>
+              <TableCell>Tax Name</TableCell>
+              <TableCell>Tax Rate</TableCell>
+              <TableCell>Tax Type</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredTaxConfigs.map((config) => (
+              <TableRow key={config.id}>
+                <TableCell>{config.id}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <PercentIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {config.tax_name}
+                    </Typography>
+                  </Box>
+                </TableCell>
+                <TableCell>{config.tax_rate}%</TableCell>
+                <TableCell>
+                  <Chip
+                    label={config.tax_type === 'percentage' ? 'Percentage' : 'Fixed'}
+                    size="small"
+                    color={config.tax_type === 'percentage' ? 'primary' : 'secondary'}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={config.is_active ? 'Active' : 'Inactive'}
+                    color={config.is_active ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>{config.description || '—'}</TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Delete Configuration">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDelete(config.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+            {filteredTaxConfigs.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {searchQuery ? 'No tax configurations found matching your search' : 'No tax configurations found'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

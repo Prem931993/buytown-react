@@ -50,6 +50,7 @@ function Users() {
     message: '',
     severity: 'success',
   });
+  const [roles, setRoles] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,6 +122,26 @@ function Users() {
     };
 
     fetchData();
+  }, []);
+
+  // Fetch roles on component mount
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await adminApiClient.get('/users/roles');
+        setRoles(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        // Fallback to hardcoded roles if API fails
+        setRoles([
+          { id: 1, name: 'admin' },
+          { id: 2, name: 'user' },
+          { id: 3, name: 'delivery_person' }
+        ]);
+      }
+    };
+
+    fetchRoles();
   }, []);
 
   // Navigation to detail page is now handled with react-router
@@ -198,50 +219,90 @@ function Users() {
   });
 
   const getRoleChip = (role) => {
-    switch (role) {
-      case 'admin':
-        return (
-          <Chip
-            icon={<AdminIcon />}
-            label="Admin"
-            size="small"
-            color="error"
-          />
-        );
-      case 'user':
-        return (
-          <Chip
-            icon={<PersonIcon />}
-            label="User"
-            size="small"
-            color="primary"
-          />
-        );
-      case 'delivery_person':
-        return (
-          <Chip
-            icon={<PersonIcon />}
-            label="Delivery Person"
-            size="small"
-            color="success"
-          />
-        );
-      default:
-        return (
-          <Chip
-            icon={<PersonIcon />}
-            label={role}
-            size="small"
-          />
-        );
-    }
+    const roleData = roles.find(r => r.name === role);
+    const displayName = roleData
+      ? roleData.name.charAt(0).toUpperCase() + roleData.name.slice(1).replace('_', ' ')
+      : role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+
+    // Define role-specific icons and colors
+    const getRoleIcon = (roleName) => {
+      switch (roleName) {
+        case 'admin':
+          return <AdminIcon />;
+        case 'user':
+        case 'delivery_person':
+        default:
+          return <PersonIcon />;
+      }
+    };
+
+    const getRoleColor = (roleName) => {
+      switch (roleName) {
+        case 'admin':
+          return 'error';
+        case 'user':
+          return 'primary';
+        case 'delivery_person':
+          return 'success';
+        default:
+          return 'default';
+      }
+    };
+
+    return (
+      <Chip
+        icon={getRoleIcon(role)}
+        label={displayName}
+        size="small"
+        color={getRoleColor(role)}
+      />
+    );
   };
 
   const getStatusChip = (status) => {
+    // Handle both string and smallint status values
+    let statusText = 'Active';
+    let color = 'success';
+
+    if (typeof status === 'string') {
+      const statusLower = status.toLowerCase();
+      if (statusLower === 'active') {
+        statusText = 'Active';
+        color = 'success';
+      } else if (statusLower === 'inactive') {
+        statusText = 'Inactive';
+        color = 'default';
+      } else if (statusLower === 'suspended') {
+        statusText = 'Suspended';
+        color = 'warning';
+      } else {
+        statusText = 'Unknown';
+        color = 'default';
+      }
+    } else if (typeof status === 'number') {
+      if (status === 1) {
+        statusText = 'Active';
+        color = 'success';
+      } else if (status === 2) {
+        statusText = 'Inactive';
+        color = 'default';
+      } else if (status === 3) {
+        statusText = 'Suspended';
+        color = 'warning';
+      } else {
+        statusText = 'Unknown';
+        color = 'default';
+      }
+    } else {
+      // fallback for any other values
+      statusText = 'Unknown';
+      color = 'default';
+    }
+
     return (
       <Chip
-        label={status === 'active' ? 'Active' : 'Inactive'}
-        color={status === 'active' ? 'success' : 'default'}
+        label={statusText}
+        color={color}
         size="small"
       />
     );
@@ -317,9 +378,11 @@ function Users() {
                   }
                 >
                   <MenuItem value="all">All Roles</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="user">User</MenuItem>
-                  <MenuItem value="delivery_person">Delivery Person</MenuItem>
+                  {roles.map((role) => (
+                    <MenuItem key={role.id} value={role.name}>
+                      {role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' ')}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

@@ -1,11 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import adminService from '../services/adminService';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  TextField,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Snackbar,
+  Alert,
+  Tooltip
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Email as EmailIcon,
+  Edit as EditIcon,
+} from '@mui/icons-material';
 
 function EmailConfig() {
   const [emailConfigs, setEmailConfigs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+  const [editingConfig, setEditingConfig] = useState(null);
   const [formData, setFormData] = useState({
     config_type: 'smtp',
     smtp_host: '',
@@ -26,15 +59,15 @@ function EmailConfig() {
 
   // Fetch email configurations
   const fetchEmailConfigs = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const response = await adminService.config.getEmailConfigs();
       setEmailConfigs(response.configs || []);
     } catch (err) {
-      setError('Failed to load email configurations');
-    } finally {
-      setLoading(false);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load email configurations',
+        severity: 'error',
+      });
     }
   };
 
@@ -53,8 +86,25 @@ function EmailConfig() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await adminService.config.createEmailConfig(formData);
+      if (editingConfig) {
+        // Update existing config
+        await adminService.config.updateEmailConfig(editingConfig.id, formData);
+        setSnackbar({
+          open: true,
+          message: 'Email configuration updated successfully',
+          severity: 'success',
+        });
+      } else {
+        // Create new config
+        await adminService.config.createEmailConfig(formData);
+        setSnackbar({
+          open: true,
+          message: 'Email configuration created successfully',
+          severity: 'success',
+        });
+      }
       setShowForm(false);
+      setEditingConfig(null);
       setFormData({
         config_type: 'smtp',
         smtp_host: '',
@@ -74,7 +124,11 @@ function EmailConfig() {
       });
       fetchEmailConfigs();
     } catch (err) {
-      setError('Failed to create email configuration');
+      setSnackbar({
+        open: true,
+        message: editingConfig ? 'Failed to update email configuration' : 'Failed to create email configuration',
+        severity: 'error',
+      });
     }
   };
 
@@ -83,8 +137,17 @@ function EmailConfig() {
       try {
         await adminService.config.deleteEmailConfig(id);
         fetchEmailConfigs();
+        setSnackbar({
+          open: true,
+          message: 'Email configuration deleted successfully',
+          severity: 'success',
+        });
       } catch (err) {
-        setError('Failed to delete email configuration');
+        setSnackbar({
+          open: true,
+          message: 'Failed to delete email configuration',
+          severity: 'error',
+        });
       }
     }
   };
@@ -93,347 +156,425 @@ function EmailConfig() {
     try {
       await adminService.config.updateEmailConfig(id, { enabled: !currentEnabled });
       fetchEmailConfigs();
+      setSnackbar({
+        open: true,
+        message: `Configuration ${!currentEnabled ? 'enabled' : 'disabled'} successfully`,
+        severity: 'success',
+      });
     } catch (err) {
-      setError('Failed to update configuration status');
+      setSnackbar({
+        open: true,
+        message: 'Failed to update configuration status',
+        severity: 'error',
+      });
     }
   };
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleEdit = (config) => {
+    setEditingConfig(config);
+    setFormData({
+      config_type: config.config_type || 'smtp',
+      smtp_host: config.smtp_host || '',
+      smtp_port: config.smtp_port || '',
+      smtp_user: config.smtp_user || '',
+      smtp_password: '', // Do not prefill password for security
+      smtp_secure: config.smtp_secure || false,
+      from_email: config.from_email || '',
+      from_name: config.from_name || '',
+      mail_user: config.mail_user || '',
+      mail_client_id: config.mail_client_id || '',
+      mail_client_secret: '', // Do not prefill secret for security
+      mail_refresh_token: '', // Do not prefill token for security
+      mail_access_token: config.mail_access_token || '',
+      token_expires_at: config.token_expires_at || '',
+      enabled: config.enabled || false,
+    });
+    setShowForm(true);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false,
+    });
+  };
+
+
+  const filteredEmailConfigs = emailConfigs.filter((config) => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        config.from_email?.toLowerCase().includes(query) ||
+        config.from_name?.toLowerCase().includes(query) ||
+        config.config_type?.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Email Configuration Management</h2>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+          Email Configuration Management
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              setEditingConfig(null);
+              setFormData({
+                config_type: 'smtp',
+                smtp_host: '',
+                smtp_port: '',
+                smtp_user: '',
+                smtp_password: '',
+                smtp_secure: false,
+                from_email: '',
+                from_name: '',
+                mail_user: '',
+                mail_client_id: '',
+                mail_client_secret: '',
+                mail_refresh_token: '',
+                mail_access_token: '',
+                token_expires_at: '',
+                enabled: true
+              });
+            } else {
+              setShowForm(true);
+            }
+          }}
+          sx={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+            },
           }}
         >
           {showForm ? 'Cancel' : 'Add Configuration'}
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      {loading && <p>Loading configurations...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search email configurations..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
+                }}
+                variant="outlined"
+                size="small"
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
-          <h3>Add Email Configuration</h3>
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              {editingConfig ? 'Edit Email Configuration' : 'Add New Email Configuration'}
+            </Typography>
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Configuration Type"
+                    name="config_type"
+                    value={formData.config_type}
+                    onChange={handleInputChange}
+                    size="small"
+                  >
+                    <option value="smtp">SMTP</option>
+                    <option value="gmail_app_password">Gmail App Password</option>
+                    <option value="oauth2">OAuth2</option>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="From Email"
+                    name="from_email"
+                    value={formData.from_email}
+                    onChange={handleInputChange}
+                    required
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="From Name"
+                    name="from_name"
+                    value={formData.from_name}
+                    onChange={handleInputChange}
+                    required
+                    size="small"
+                  />
+                </Grid>
 
-          {/* Configuration Type Selection */}
-          <div style={{ marginBottom: '20px' }}>
-            <h4>Configuration Type:</h4>
-            <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <input
-                  type="radio"
-                  name="config_type"
-                  value="smtp"
-                  checked={formData.config_type === 'smtp'}
-                  onChange={handleInputChange}
-                />
-                SMTP
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <input
-                  type="radio"
-                  name="config_type"
-                  value="gmail_app_password"
-                  checked={formData.config_type === 'gmail_app_password'}
-                  onChange={handleInputChange}
-                />
-                Gmail App Password
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <input
-                  type="radio"
-                  name="config_type"
-                  value="oauth2"
-                  checked={formData.config_type === 'oauth2'}
-                  onChange={handleInputChange}
-                />
-                OAuth2
-              </label>
-            </div>
-          </div>
+                {(formData.config_type === 'smtp' || formData.config_type === 'gmail_app_password') && (
+                  <>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP Host"
+                        name="smtp_host"
+                        value={formData.smtp_host}
+                        onChange={handleInputChange}
+                        required
+                        placeholder={formData.config_type === 'gmail_app_password' ? 'smtp.gmail.com' : ''}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP Port"
+                        name="smtp_port"
+                        type="number"
+                        value={formData.smtp_port}
+                        onChange={handleInputChange}
+                        required
+                        placeholder={formData.config_type === 'gmail_app_password' ? '587' : ''}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP User"
+                        name="smtp_user"
+                        value={formData.smtp_user}
+                        onChange={handleInputChange}
+                        required
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP Password"
+                        name="smtp_password"
+                        type="password"
+                        value={formData.smtp_password}
+                        onChange={handleInputChange}
+                        required={!editingConfig} // Required only if creating new config
+                        placeholder={formData.config_type === 'gmail_app_password' ? 'Your Gmail App Password' : ''}
+                        size="small"
+                      />
+                    </Grid>
+                  </>
+                )}
 
-          {/* Common Fields */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-            <div>
-              <label>From Email:</label>
-              <input
-                type="email"
-                name="from_email"
-                value={formData.from_email}
-                onChange={handleInputChange}
-                required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              />
-            </div>
-            <div>
-              <label>From Name:</label>
-              <input
-                type="text"
-                name="from_name"
-                value={formData.from_name}
-                onChange={handleInputChange}
-                required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-              />
-            </div>
-          </div>
+                {formData.config_type === 'oauth2' && (
+                  <>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Gmail User"
+                        name="mail_user"
+                        value={formData.mail_user}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="your-email@gmail.com"
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Client ID"
+                        name="mail_client_id"
+                        value={formData.mail_client_id}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Your Google Client ID"
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Client Secret"
+                        name="mail_client_secret"
+                        type="password"
+                        value={formData.mail_client_secret}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Your Google Client Secret"
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Refresh Token"
+                        name="mail_refresh_token"
+                        type="password"
+                        value={formData.mail_refresh_token}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Your Google Refresh Token"
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Access Token"
+                        name="mail_access_token"
+                        value={formData.mail_access_token}
+                        onChange={handleInputChange}
+                        placeholder="Access token will be auto-generated"
+                        size="small"
+                      />
+                    </Grid>
+                  </>
+                )}
 
-          {/* Enabled Toggle */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="checkbox"
-                name="enabled"
-                checked={formData.enabled}
-                onChange={handleInputChange}
-              />
-              <span>Enable this configuration for sending emails</span>
-            </label>
-          </div>
-
-          {/* SMTP Configuration Fields */}
-          {(formData.config_type === 'smtp' || formData.config_type === 'gmail_app_password') && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4>SMTP Configuration:</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div>
-                  <label>SMTP Host:</label>
-                  <input
-                    type="text"
-                    name="smtp_host"
-                    value={formData.smtp_host}
-                    onChange={handleInputChange}
-                    required
-                    placeholder={formData.config_type === 'gmail_app_password' ? 'smtp.gmail.com' : ''}
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>SMTP Port:</label>
-                  <input
-                    type="number"
-                    name="smtp_port"
-                    value={formData.smtp_port}
-                    onChange={handleInputChange}
-                    required
-                    placeholder={formData.config_type === 'gmail_app_password' ? '587' : ''}
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>SMTP User:</label>
-                  <input
-                    type="text"
-                    name="smtp_user"
-                    value={formData.smtp_user}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>SMTP Password:</label>
-                  <input
-                    type="password"
-                    name="smtp_password"
-                    value={formData.smtp_password}
-                    onChange={handleInputChange}
-                    required
-                    placeholder={formData.config_type === 'gmail_app_password' ? 'Your Gmail App Password' : ''}
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      name="smtp_secure"
-                      checked={formData.smtp_secure}
-                      onChange={handleInputChange}
-                    />
-                    SMTP Secure (SSL/TLS)
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* OAuth2 Configuration Fields */}
-          {formData.config_type === 'oauth2' && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4>OAuth2 Configuration:</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div>
-                  <label>Gmail User:</label>
-                  <input
-                    type="email"
-                    name="mail_user"
-                    value={formData.mail_user}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="your-email@gmail.com"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>Client ID:</label>
-                  <input
-                    type="text"
-                    name="mail_client_id"
-                    value={formData.mail_client_id}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Your Google Client ID"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>Client Secret:</label>
-                  <input
-                    type="password"
-                    name="mail_client_secret"
-                    value={formData.mail_client_secret}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Your Google Client Secret"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div>
-                  <label>Refresh Token:</label>
-                  <input
-                    type="password"
-                    name="mail_refresh_token"
-                    value={formData.mail_refresh_token}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Your Google Refresh Token"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label>Access Token:</label>
-                  <input
-                    type="text"
-                    name="mail_access_token"
-                    value={formData.mail_access_token}
-                    onChange={handleInputChange}
-                    placeholder="Access token will be auto-generated"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            style={{
-              marginTop: '15px',
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Save Configuration
-          </button>
-        </form>
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      sx={{
+                        background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)',
+                        },
+                      }}
+                    >
+                      Save Configuration
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      onClick={() => setShowForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Grid>
+              </Grid>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <h3>Existing Configurations</h3>
-      {emailConfigs.length === 0 ? (
-        <div style={{ padding: '20px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '5px', marginBottom: '20px' }}>
-          <h4 style={{ color: '#856404', margin: '0 0 10px 0' }}>⚠️ No Email Configuration Found</h4>
-          <p style={{ color: '#856404', margin: '0' }}>
-            Email functionality is currently disabled. Password reset emails and other email features will not work until you configure an email service.
-          </p>
-        </div>
-      ) : (
-        <>
-          {emailConfigs.every(config => !config.enabled) && (
-            <div style={{ padding: '15px', backgroundColor: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '5px', marginBottom: '20px' }}>
-              <h4 style={{ color: '#721c24', margin: '0 0 10px 0' }}>⚠️ All Email Configurations Disabled</h4>
-              <p style={{ color: '#721c24', margin: '0' }}>
-                All email configurations are currently disabled. Password reset emails and other email features will not work until you enable at least one configuration.
-              </p>
-            </div>
-          )}
-          <table border="1" cellPadding="8" cellSpacing="0" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8f9fa' }}>
-              <th>ID</th>
-              <th>Type</th>
-              <th>From Email</th>
-              <th>From Name</th>
-              <th>SMTP Host</th>
-              <th>SMTP Port</th>
-              <th>SMTP User</th>
-              <th>Enabled</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {emailConfigs.map((config) => (
-              <tr key={config.id}>
-                <td>{config.id}</td>
-                <td style={{ textTransform: 'capitalize' }}>
-                  {config.config_type === 'gmail_app_password' ? 'Gmail App Password' :
-                   config.config_type === 'oauth2' ? 'OAuth2' : 'SMTP'}
-                </td>
-                <td>{config.from_email}</td>
-                <td>{config.from_name}</td>
-                <td>{config.smtp_host || 'N/A'}</td>
-                <td>{config.smtp_port || 'N/A'}</td>
-                <td>{config.smtp_user || config.mail_user || 'N/A'}</td>
-                <td>
-                  <button
-                    onClick={() => handleToggleEnabled(config.id, config.enabled)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: config.enabled ? '#28a745' : '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {config.enabled ? 'Enabled' : 'Disabled'}
-                  </button>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleDelete(config.id)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '3px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+              <TableCell>ID</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>From Email</TableCell>
+              <TableCell>From Name</TableCell>
+              <TableCell>SMTP Host</TableCell>
+              <TableCell>SMTP Port</TableCell>
+              <TableCell>SMTP User</TableCell>
+              <TableCell>Enabled</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredEmailConfigs.map((config) => (
+              <TableRow key={config.id}>
+                <TableCell>{config.id}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={config.config_type === 'gmail_app_password' ? 'Gmail App Password' :
+                           config.config_type === 'oauth2' ? 'OAuth2' : 'SMTP'}
+                    size="small"
+                    color="primary"
+                  />
+                </TableCell>
+                <TableCell>{config.from_email}</TableCell>
+                <TableCell>{config.from_name}</TableCell>
+                <TableCell>{config.smtp_host || '—'}</TableCell>
+                <TableCell>{config.smtp_port || '—'}</TableCell>
+                <TableCell>{config.smtp_user || '—'}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={config.enabled ? 'Active' : 'Inactive'}
+                    color={config.enabled ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Edit Configuration">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleEdit(config)}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Toggle Status">
+                    <IconButton
+                      size="small"
+                      color={config.enabled ? 'default' : 'success'}
+                      onClick={() => handleToggleEnabled(config.id, config.enabled)}
+                    >
+                      <EmailIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Configuration">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDelete(config.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-        </>
-      )}
-    </div>
+            {filteredEmailConfigs.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {searchQuery ? 'No email configurations found matching your search' : 'No email configurations found'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminService } from '../services/adminService.js';
 import {
   Box,
   Typography,
@@ -28,6 +29,7 @@ import {
   CardContent,
   Tabs,
   Tab,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,159 +45,9 @@ import {
   Print,
 } from '@mui/icons-material';
 
-// Mock data for orders
-const mockOrders = [
-  {
-    id: 'ORD-001',
-    customer: 'John Doe',
-    date: '2023-06-15',
-    total: 129.99,
-    status: 'Delivered',
-    items: 3,
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express',
-  },
-  {
-    id: 'ORD-002',
-    customer: 'Jane Smith',
-    date: '2023-06-14',
-    total: 79.50,
-    status: 'Processing',
-    items: 2,
-    paymentMethod: 'PayPal',
-    shippingMethod: 'Standard',
-  },
-  {
-    id: 'ORD-003',
-    customer: 'Robert Johnson',
-    date: '2023-06-13',
-    total: 249.99,
-    status: 'Shipped',
-    items: 1,
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express',
-  },
-  {
-    id: 'ORD-004',
-    customer: 'Emily Davis',
-    date: '2023-06-12',
-    total: 45.00,
-    status: 'Cancelled',
-    items: 1,
-    paymentMethod: 'Debit Card',
-    shippingMethod: 'Standard',
-  },
-  {
-    id: 'ORD-005',
-    customer: 'Michael Wilson',
-    date: '2023-06-11',
-    total: 189.95,
-    status: 'Delivered',
-    items: 4,
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express',
-  },
-  {
-    id: 'ORD-006',
-    customer: 'Sarah Brown',
-    date: '2023-06-10',
-    total: 59.99,
-    status: 'Processing',
-    items: 1,
-    paymentMethod: 'PayPal',
-    shippingMethod: 'Standard',
-  },
-  {
-    id: 'ORD-007',
-    customer: 'David Miller',
-    date: '2023-06-09',
-    total: 299.99,
-    status: 'Pending',
-    items: 2,
-    paymentMethod: 'Credit Card',
-    shippingMethod: 'Express',
-  },
-];
 
-// Order details mock data
-const mockOrderDetails = {
-  id: 'ORD-001',
-  customer: {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-  },
-  shippingAddress: {
-    street: '123 Main St',
-    city: 'New York',
-    state: 'NY',
-    zip: '10001',
-    country: 'USA',
-  },
-  billingAddress: {
-    street: '123 Main St',
-    city: 'New York',
-    state: 'NY',
-    zip: '10001',
-    country: 'USA',
-  },
-  orderDate: '2023-06-15 14:30:45',
-  status: 'Delivered',
-  paymentMethod: 'Credit Card',
-  paymentStatus: 'Paid',
-  shippingMethod: 'Express',
-  trackingNumber: 'TRK12345678',
-  subtotal: 119.99,
-  shippingCost: 10.00,
-  tax: 0.00,
-  discount: 0.00,
-  total: 129.99,
-  items: [
-    {
-      id: 1,
-      name: 'Smartphone X',
-      sku: 'SMX-001',
-      price: 99.99,
-      quantity: 1,
-      total: 99.99,
-    },
-    {
-      id: 2,
-      name: 'Phone Case',
-      sku: 'PC-101',
-      price: 10.00,
-      quantity: 2,
-      total: 20.00,
-    },
-  ],
-  timeline: [
-    {
-      status: 'Order Placed',
-      date: '2023-06-15 14:30:45',
-      note: 'Order was placed by customer',
-    },
-    {
-      status: 'Payment Confirmed',
-      date: '2023-06-15 14:35:12',
-      note: 'Payment was confirmed',
-    },
-    {
-      status: 'Processing',
-      date: '2023-06-16 09:12:33',
-      note: 'Order is being processed',
-    },
-    {
-      status: 'Shipped',
-      date: '2023-06-17 11:45:20',
-      note: 'Order has been shipped via Express',
-    },
-    {
-      status: 'Delivered',
-      date: '2023-06-18 15:22:10',
-      note: 'Order was delivered to customer',
-    },
-  ],
-};
+
+
 
 function Orders() {
   const [page, setPage] = useState(0);
@@ -205,6 +57,10 @@ function Orders() {
   const [openOrderDetails, setOpenOrderDetails] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+  const [orders, setOrders] = useState([]);
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+
 
   // Handle page change
   const handleChangePage = (event, newPage) => {
@@ -229,12 +85,6 @@ function Orders() {
     setPage(0);
   };
 
-  // Handle view order details
-  const handleViewOrderDetails = (order) => {
-    setSelectedOrder(order);
-    setOpenOrderDetails(true);
-  };
-
   // Handle close order details dialog
   const handleCloseOrderDetails = () => {
     setOpenOrderDetails(false);
@@ -245,14 +95,56 @@ function Orders() {
     setTabValue(newValue);
   };
 
+  // Fetch orders on component mount
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await adminService.orders.getAll();
+      // API returns { success: true, orders: [...] }, so access response.orders
+      setOrders(response.orders || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      // Fallback to empty array on error
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch order details
+  const fetchOrderDetails = async (orderId) => {
+    try {
+      const response = await adminService.orders.getById(orderId);
+      // API returns { success: true, order: {...} }, so access response.order
+      setOrderDetails(response.order || null);
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      setOrderDetails(null);
+    }
+  };
+
+  // Handle view order details
+  const handleViewOrderDetails = async (order) => {
+    setSelectedOrder(order);
+    setOpenOrderDetails(true);
+    await fetchOrderDetails(order.id);
+  };
+
+
+
   // Filter orders based on search term and status filter
-  const filteredOrders = mockOrders.filter((order) => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      (order.id?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.customer?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -356,52 +248,70 @@ function Orders() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredOrders
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((order) => (
-                  <TableRow key={order.id} hover>
-                    <TableCell component="th" scope="row">
-                      <Typography variant="body2" fontWeight={600}>
-                        {order.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={getStatusIcon(order.status)}
-                        label={order.status}
-                        size="small"
-                        color={getStatusColor(order.status)}
-                        sx={{ fontWeight: 500 }}
-                      />
-                    </TableCell>
-                    <TableCell>{order.items}</TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        className= {selectedOrder}
-                        onClick={() => handleViewOrderDetails(order)}
-                        sx={{ color: 'primary.main' }}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        sx={{ color: 'error.main' }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    <CircularProgress size={40} />
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Loading orders...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No orders found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredOrders
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((order) => (
+                    <TableRow key={order.id} hover>
+                      <TableCell component="th" scope="row">
+                        <Typography variant="body2" fontWeight={600}>
+                          {order.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{order.customer}</TableCell>
+                      <TableCell>{order.date}</TableCell>
+                      <TableCell>${order.total?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(order.status)}
+                          label={order.status}
+                          size="small"
+                          color={getStatusColor(order.status)}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </TableCell>
+                      <TableCell>{order.items?.length || 0}</TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewOrderDetails(order)}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          sx={{ color: 'error.main' }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -425,7 +335,7 @@ function Orders() {
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Order Details: {mockOrderDetails.id}</Typography>
+            <Typography variant="h6">Order Details: {orderDetails?.id || selectedOrder?.id}</Typography>
             <Box>
               <Button
                 startIcon={<Print />}
@@ -461,13 +371,13 @@ function Orders() {
                         Customer Information
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Name:</strong> {mockOrderDetails.customer.name}
+                        <strong>Name:</strong> {orderDetails?.customer?.name || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Email:</strong> {mockOrderDetails.customer.email}
+                        <strong>Email:</strong> {orderDetails?.customer?.email || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Phone:</strong> {mockOrderDetails.customer.phone}
+                        <strong>Phone:</strong> {orderDetails?.customer?.phone || 'N/A'}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -481,27 +391,27 @@ function Orders() {
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">Order Date:</Typography>
                         <Typography variant="body2" fontWeight={500}>
-                          {mockOrderDetails.orderDate}
+                          {orderDetails?.orderDate || 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">Status:</Typography>
                         <Chip
-                          label={mockOrderDetails.status}
+                          label={orderDetails?.status || 'N/A'}
                           size="small"
-                          color={getStatusColor(mockOrderDetails.status)}
+                          color={getStatusColor(orderDetails?.status)}
                         />
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">Payment Method:</Typography>
                         <Typography variant="body2" fontWeight={500}>
-                          {mockOrderDetails.paymentMethod}
+                          {orderDetails?.paymentMethod || 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2">Payment Status:</Typography>
                         <Chip
-                          label={mockOrderDetails.paymentStatus}
+                          label={orderDetails?.paymentStatus || 'N/A'}
                           size="small"
                           color="success"
                         />
@@ -516,20 +426,20 @@ function Orders() {
                         Shipping Address
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.shippingAddress.street}
+                        {orderDetails?.shippingAddress?.street || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.shippingAddress.city}, {mockOrderDetails.shippingAddress.state} {mockOrderDetails.shippingAddress.zip}
+                        {orderDetails?.shippingAddress?.city || 'N/A'}, {orderDetails?.shippingAddress?.state || 'N/A'} {orderDetails?.shippingAddress?.zip || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.shippingAddress.country}
+                        {orderDetails?.shippingAddress?.country || 'N/A'}
                       </Typography>
                       <Box sx={{ mt: 2 }}>
                         <Typography variant="body2">
-                          <strong>Shipping Method:</strong> {mockOrderDetails.shippingMethod}
+                          <strong>Shipping Method:</strong> {orderDetails?.shippingMethod || 'N/A'}
                         </Typography>
                         <Typography variant="body2">
-                          <strong>Tracking Number:</strong> {mockOrderDetails.trackingNumber}
+                          <strong>Tracking Number:</strong> {orderDetails?.trackingNumber || 'N/A'}
                         </Typography>
                       </Box>
                     </CardContent>
@@ -542,13 +452,13 @@ function Orders() {
                         Billing Address
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.billingAddress.street}
+                        {orderDetails?.billingAddress?.street || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.billingAddress.city}, {mockOrderDetails.billingAddress.state} {mockOrderDetails.billingAddress.zip}
+                        {orderDetails?.billingAddress?.city || 'N/A'}, {orderDetails?.billingAddress?.state || 'N/A'} {orderDetails?.billingAddress?.zip || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
-                        {mockOrderDetails.billingAddress.country}
+                        {orderDetails?.billingAddress?.country || 'N/A'}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -571,13 +481,13 @@ function Orders() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {mockOrderDetails.items.map((item) => (
+                    {(orderDetails?.items || []).map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.sku}</TableCell>
-                        <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                        <TableCell align="right">${item.price?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell align="right">{item.quantity}</TableCell>
-                        <TableCell align="right">${item.total.toFixed(2)}</TableCell>
+                        <TableCell align="right">${item.total?.toFixed(2) || '0.00'}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow>
@@ -589,7 +499,7 @@ function Orders() {
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="body2" fontWeight={500}>
-                          ${mockOrderDetails.subtotal.toFixed(2)}
+                          ${orderDetails?.subtotal?.toFixed(2) || '0.00'}
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -602,11 +512,11 @@ function Orders() {
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="body2">
-                          ${mockOrderDetails.shippingCost.toFixed(2)}
+                          ${orderDetails?.shippingCost?.toFixed(2) || '0.00'}
                         </Typography>
                       </TableCell>
                     </TableRow>
-                    {mockOrderDetails.tax > 0 && (
+                    {(orderDetails?.tax || 0) > 0 && (
                       <TableRow>
                         <TableCell colSpan={3} />
                         <TableCell align="right">
@@ -616,12 +526,12 @@ function Orders() {
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2">
-                            ${mockOrderDetails.tax.toFixed(2)}
+                            ${orderDetails?.tax?.toFixed(2) || '0.00'}
                           </Typography>
                         </TableCell>
                       </TableRow>
                     )}
-                    {mockOrderDetails.discount > 0 && (
+                    {(orderDetails?.discount || 0) > 0 && (
                       <TableRow>
                         <TableCell colSpan={3} />
                         <TableCell align="right">
@@ -631,7 +541,7 @@ function Orders() {
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" sx={{ color: 'error.main' }}>
-                            -${mockOrderDetails.discount.toFixed(2)}
+                            -${orderDetails?.discount?.toFixed(2) || '0.00'}
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -645,7 +555,7 @@ function Orders() {
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="subtitle1" fontWeight={600}>
-                          ${mockOrderDetails.total.toFixed(2)}
+                          ${orderDetails?.total?.toFixed(2) || '0.00'}
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -657,7 +567,7 @@ function Orders() {
 
           {tabValue === 1 && (
             <Box sx={{ p: 2 }}>
-              {mockOrderDetails.timeline.map((event, index) => (
+              {(orderDetails?.timeline || []).map((event, index) => (
                 <Box key={index} sx={{ display: 'flex', mb: 3 }}>
                   <Box
                     sx={{
@@ -667,7 +577,7 @@ function Orders() {
                       bgcolor: 'primary.main',
                       mt: 0.5,
                       position: 'relative',
-                      '&::after': index !== mockOrderDetails.timeline.length - 1 ? {
+                      '&::after': index !== (orderDetails?.timeline || []).length - 1 ? {
                         content: '""',
                         position: 'absolute',
                         top: 16,

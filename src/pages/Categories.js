@@ -37,7 +37,7 @@ import {
   Category as CategoryIcon,
   SubdirectoryArrowRight as SubcategoryIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { adminApiClient } from '../services/adminService.js';
 
 function Categories() {
  useNavigate();
@@ -50,7 +50,7 @@ function Categories() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: 'active',
+    status: 1,
     image: null,
   });
   const [snackbar, setSnackbar] = useState({
@@ -79,7 +79,7 @@ function Categories() {
     const fetchData = async () => {
       try {
         setSearchLoading(true);
-        const response = await axios.get('/categories', {
+        const response = await adminApiClient.get('/categories', {
           params: {
             page: pagination.currentPage,
             limit: 10,
@@ -89,7 +89,7 @@ function Categories() {
         // Transform the flat list of categories into a hierarchical structure
         const transformedCategories = transformCategories(response.data.categories);
         setCategories(transformedCategories);
-        
+
         // Update pagination state
         if (response.data.pagination) {
           setPagination(response.data.pagination);
@@ -105,7 +105,7 @@ function Categories() {
         setSearchLoading(false);
       }
     };
-    
+
     fetchData();
   }, [pagination.currentPage, searchTerm]);
 
@@ -162,7 +162,7 @@ function Categories() {
       setFormData({
         name: '',
         description: '',
-        status: 'active',
+        status: 1,
         image: null,
       });
     }
@@ -200,14 +200,14 @@ function Categories() {
       
       if (currentItem) {
         // Update existing category
-        await axios.put(`/categories/${currentItem.id}`, formDataToSend, {
+        await adminApiClient.put(`/categories/${currentItem.id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
         // Create new category
-        await axios.post('/categories', formDataToSend, {
+        await adminApiClient.post('/categories', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -223,7 +223,7 @@ function Categories() {
       handleCloseForm();
       
       // Refresh the categories list
-      const response2 = await axios.get('/categories', {
+      const response2 = await adminApiClient.get('/categories', {
         params: {
           page: pagination.currentPage,
           limit: 10,
@@ -232,7 +232,7 @@ function Categories() {
       });
       const transformedCategories = transformCategories(response2.data.categories);
       setCategories(transformedCategories);
-      
+
       // Update pagination state
       if (response2.data.pagination) {
         setPagination(response2.data.pagination);
@@ -278,8 +278,8 @@ function Categories() {
         }
         
         if (parentId) {
-          await axios.delete(`/categories/${deleteItem.id}`);
-          
+          await adminApiClient.delete(`/categories/${deleteItem.id}`);
+
           setSnackbar({
             open: true,
             message: 'Subcategory deleted successfully',
@@ -289,20 +289,20 @@ function Categories() {
           throw new Error('Parent category not found');
         }
       } else {
-        await axios.delete(`/categories/${deleteItem.id}`);
-        
+        await adminApiClient.delete(`/categories/${deleteItem.id}`);
+
         setSnackbar({
           open: true,
           message: 'Category deleted successfully',
           severity: 'success',
         });
       }
-      
+
       // Close the dialog
       handleDeleteCancel();
-      
+
       // Refresh the categories list
-      const response = await axios.get('/categories', {
+      const response = await adminApiClient.get('/categories', {
         params: {
           page: pagination.currentPage,
           limit: 10,
@@ -311,7 +311,7 @@ function Categories() {
       });
       const transformedCategories = transformCategories(response.data.categories);
       setCategories(transformedCategories);
-      
+
       // Update pagination state
       if (response.data.pagination) {
         setPagination(response.data.pagination);
@@ -338,23 +338,23 @@ function Categories() {
       const formData = new FormData();
       formData.append('file', importFile);
       
-      const response = await axios.post('/categories/import', formData, {
+      const response = await adminApiClient.post('/categories/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       setSnackbar({
         open: true,
         message: response.data.message,
         severity: 'success',
       });
-      
+
       setImportDialogOpen(false);
       setImportFile(null);
-      
+
       // Refresh the categories list
-      const response2 = await axios.get('/categories', {
+      const response2 = await adminApiClient.get('/categories', {
         params: {
           page: pagination.currentPage,
           limit: 10,
@@ -363,7 +363,7 @@ function Categories() {
       });
       const transformedCategories = transformCategories(response2.data.categories);
       setCategories(transformedCategories);
-      
+
       // Update pagination state
       if (response2.data.pagination) {
         setPagination(response2.data.pagination);
@@ -538,8 +538,8 @@ function Categories() {
                   <TableCell>{category.description}</TableCell>
                   <TableCell>
                     <Chip
-                      label={category.status === 'active' ? 'Active' : 'Inactive'}
-                      color={category.status === 'active' ? 'success' : 'default'}
+                      label={category.status === 1 ? 'Active' : 'Inactive'}
+                      color={category.status === 1 ? 'success' : 'default'}
                       size="small"
                     />
                   </TableCell>
@@ -613,8 +613,8 @@ function Categories() {
                                 <TableCell>{subcategory.description}</TableCell>
                                 <TableCell>
                                   <Chip
-                                    label={subcategory.status === 'active' ? 'Active' : 'Inactive'}
-                                    color={subcategory.status === 'active' ? 'success' : 'default'}
+                                    label={subcategory.status === 1 ? 'Active' : 'Inactive'}
+                                    color={subcategory.status === 1 ? 'success' : 'default'}
                                     size="small"
                                   />
                                 </TableCell>
@@ -737,8 +737,8 @@ function Categories() {
                 onChange={handleInputChange}
                 margin="normal"
               >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value={1}>Active</MenuItem>
+                <MenuItem value={0}>Inactive</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12}>

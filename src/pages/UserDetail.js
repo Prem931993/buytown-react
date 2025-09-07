@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -46,9 +46,11 @@ function UserDetail() {
     gstin: '',
     profile_photo: null,
     license: null,
-    status: 'active',
+    status: 'active', // Status as string for frontend display
     role: 'user',
+    vehicle_ids: [], // Array of selected vehicle IDs
   });
+  const [availableVehicles, setAvailableVehicles] = useState([]);
   const [filePreviews, setFilePreviews] = useState({
     profile_photo: null,
     license: null,
@@ -59,16 +61,54 @@ function UserDetail() {
     message: '',
     severity: 'success',
   });
+  const [roles, setRoles] = useState([]);
+
+  // Helper functions to convert role_id and status to string values
+  const roleIdToRole = useCallback((role_id) => {
+    const role = roles.find(r => r.id === role_id);
+    return role ? role.name : 'user';
+  }, [roles]);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await adminApiClient.get('/users/roles');
+        setRoles(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        // Fallback to hardcoded roles if API fails
+        setRoles([
+          { id: 1, name: 'admin' },
+          { id: 2, name: 'user' },
+          { id: 3, name: 'delivery_person' }
+        ]);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isEditMode) {
+      if (isEditMode && roles.length > 0) { // Only fetch user data when roles are loaded
         try {
           setLoading(true);
           // In a real implementation, this would be a GET request
           // Using POST here to match the backend API pattern
           const response = await adminApiClient.get(`/users/${id}`);
           const userData = response.data;
+
+          // If user is delivery_person, fetch vehicles first
+          let vehicles = [];
+          if (userData.role_id === 3) { // delivery_person role_id (based on API response)
+            try {
+              const vehicleResponse = await adminApiClient.get('/vehicles');
+              vehicles = vehicleResponse.data || [];
+              setAvailableVehicles(vehicles);
+            } catch (vehicleError) {
+              console.error('Failed to fetch vehicles:', vehicleError);
+            }
+          }
 
           setFormData({
             firstname: userData.firstname || '',
@@ -81,7 +121,8 @@ function UserDetail() {
             profile_photo: userData.profile_photo || null,
             license: userData.license || null,
             role: userData.role_id ? roleIdToRole(userData.role_id) : 'user',
-            status: userData.status ? statusBoolToString(userData.status) : 'active',
+            status: userData.status ? statusSmallintToString(userData.status) : 'active',
+            vehicle_ids: userData.vehicles ? userData.vehicles.map(v => v.id) : [],
           });
         } catch (error) {
           setSnackbar({
@@ -109,52 +150,84 @@ function UserDetail() {
     };
 
     fetchData();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, roles, roleIdToRole]); // Added roles as dependency
 
-  // Helper functions to convert role_id and status to string values
-  const roleIdToRole = (role_id) => {
-    switch (role_id) {
+
+  // Fetch available vehicles when role is delivery_person
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      if (formData.role === 'delivery_person') {
+        try {
+          const response = await adminApiClient.get('/vehicles');
+          setAvailableVehicles(response.data || []);
+        } catch (error) {
+          console.error('Failed to fetch vehicles:', error);
+          setSnackbar({
+            open: true,
+            message: 'Failed to load available vehicles',
+            severity: 'error',
+          });
+        }
+      } else {
+        // Clear vehicles if role is not delivery_person
+        setAvailableVehicles([]);
+      }
+    };
+
+    fetchVehicles();
+  }, [formData.role]);
+
+  // Fetch vehicles when component mounts if user is delivery_person (for edit mode)
+  useEffect(() => {
+    const fetchVehiclesOnMount = async () => {
+      if (isEditMode && formData.role === 'delivery_person' && availableVehicles.length === 0) {
+        try {
+          const response = await adminApiClient.get('/vehicles');
+          setAvailableVehicles(response.data || []);
+        } catch (error) {
+          console.error('Failed to fetch vehicles on mount:', error);
+        }
+      }
+    };
+
+    fetchVehiclesOnMount();
+  }, [isEditMode, formData.role, availableVehicles.length]);
+
+  const statusSmallintToString = (status) => {
+    // Handle both smallint values and string values
+    if (typeof status === 'string') {
+      // If it's already a string, return it as-is (handles "active", "inactive", "suspended")
+      return status;
+    }
+
+    // Handle smallint status values (1=active, 2=inactive, 3=suspended)
+    switch (status) {
       case 1:
-        return 'admin';
+        return 'active';
+      case 2:
+        return 'inactive';
       case 3:
-        return 'user';
-      case 4:
-        return 'delivery_person';
+        return 'suspended';
       default:
-        return 'user';
+        return 'active'; // Default to active
     }
-  };
-
-  const statusBoolToString = (status) => {
-    if (typeof status === 'boolean') {
-      return status ? 'active' : 'inactive';
-    }
-    return status;
   };
 
   const roleToRoleId = (role) => {
-    switch (role) {
-      case 'admin':
-        return 1;
-      case 'user':
-        return 3;
-      case 'delivery_person':
-        return 4;
-      default:
-        return 3;
-    }
+    const roleObj = roles.find(r => r.name === role);
+    return roleObj ? roleObj.id : 2; // Default to user role
   };
 
-  const statusStringToBool = (status) => {
+  const statusStringToSmallint = (status) => {
     switch (status) {
       case 'active':
-        return true;
+        return 1;
       case 'inactive':
-        return false;
+        return 2;
       case 'suspended':
-        return false; // You might want to handle suspended differently
+        return 3;
       default:
-        return true;
+        return 1; // Default to active
     }
   };
 
@@ -267,7 +340,7 @@ function UserDetail() {
 
         // Convert role and status to database format
         updateData.role_id = roleToRoleId(updateData.role);
-        updateData.status = statusStringToBool(updateData.status);
+        updateData.status = statusStringToSmallint(updateData.status);
         delete updateData.role; // Remove the string role field
 
         // Check if we have files to upload
@@ -282,6 +355,11 @@ function UserDetail() {
                 if (updateData[key] instanceof File) {
                   formDataToSend.append(key, updateData[key], updateData[key].name);
                 }
+              } else if (key === 'vehicle_ids') {
+                // Handle array of vehicle IDs
+                updateData[key].forEach(id => {
+                  formDataToSend.append('vehicle_ids[]', id);
+                });
               } else {
                 formDataToSend.append(key, updateData[key]);
               }
@@ -291,7 +369,28 @@ function UserDetail() {
           await adminApiClient.put(`/users/${id}`, formDataToSend);
         } else {
           // No files, send as JSON
-          await adminApiClient.put(`/users/${id}`, updateData);
+          // Add vehicle_ids array as separate fields for backend to process
+          const jsonData = { ...updateData };
+          if (Array.isArray(jsonData.vehicle_ids)) {
+            // Remove vehicle_ids from jsonData to avoid sending as array in JSON
+            const vehicleIds = jsonData.vehicle_ids;
+            delete jsonData.vehicle_ids;
+
+            // Create a FormData to send vehicle_ids as array fields
+            const formDataToSend = new FormData();
+            for (const key in jsonData) {
+              if (jsonData[key] !== null && jsonData[key] !== undefined && jsonData[key] !== '') {
+                formDataToSend.append(key, jsonData[key]);
+              }
+            }
+            vehicleIds.forEach(id => {
+              formDataToSend.append('vehicle_ids[]', id);
+            });
+
+            await adminApiClient.put(`/users/${id}`, formDataToSend);
+          } else {
+            await adminApiClient.put(`/users/${id}`, updateData);
+          }
         }
 
         setSnackbar({
@@ -307,6 +406,10 @@ function UserDetail() {
           if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
             if (key === 'profile_photo' || key === 'license') {
               submitData.append(key, formData[key], formData[key].name);
+            } else if (key === 'vehicle_ids' && Array.isArray(formData[key])) {
+              formData[key].forEach(id => {
+                submitData.append('vehicle_ids[]', id);
+              });
             } else {
               submitData.append(key, formData[key]);
             }
@@ -546,9 +649,11 @@ function UserDetail() {
                       value={formData.role}
                       onChange={handleInputChange}
                     >
-                      <MenuItem value="admin">Admin</MenuItem>
-                      <MenuItem value="user">User</MenuItem>
-                      <MenuItem value="delivery_person">Delivery Person</MenuItem>
+                      {roles.map((role) => (
+                        <MenuItem key={role.id} value={role.name}>
+                          {role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' ')}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -734,6 +839,46 @@ function UserDetail() {
                         Max 10MB. JPEG, JPG, PNG, PDF allowed.
                       </Typography>
                     </Box>
+                  </Grid>
+                )}
+
+                {/* Vehicle Selection - Only for delivery_person role - Full width */}
+                {formData.role === 'delivery_person' && (
+                  <Grid item xs={12}>
+                    <FormControl fullWidth margin="normal">
+                      <InputLabel>Assigned Vehicles</InputLabel>
+                      <Select
+                        label="Assigned Vehicles"
+                        name="vehicle_ids"
+                        multiple
+                        value={formData.vehicle_ids}
+                        onChange={(e) => {
+                          const { value } = e.target;
+                          setFormData({
+                            ...formData,
+                            vehicle_ids: typeof value === 'string' ? value.split(',') : value,
+                          });
+                        }}
+                        renderValue={(selected) => {
+                          if (selected.length === 0) {
+                            return 'No vehicles assigned';
+                          }
+                          return selected.map(id => {
+                            const vehicle = availableVehicles.find(v => v.id === id);
+                            return vehicle ? `${vehicle.vehicle_type} (₹${vehicle.rate_per_km}/km)` : `Vehicle ${id}`;
+                          }).join(', ');
+                        }}
+                      >
+                        {availableVehicles.map((vehicle) => (
+                          <MenuItem key={vehicle.id} value={vehicle.id}>
+                            {vehicle.vehicle_type} - ₹{vehicle.rate_per_km}/km
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Typography variant="caption" color="text.secondary">
+                      Select vehicles that this delivery person can use for deliveries.
+                    </Typography>
                   </Grid>
                 )}
               </Grid>
