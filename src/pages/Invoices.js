@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -57,11 +57,7 @@ const Invoices = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuInvoice, setMenuInvoice] = useState(null);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [page, rowsPerPage, statusFilter]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -80,7 +76,11 @@ const Invoices = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
