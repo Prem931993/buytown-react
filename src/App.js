@@ -15,6 +15,7 @@ import ParentProductForm from './pages/ParentProductForm';
 import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
 import Reports from './pages/Reports';
@@ -34,6 +35,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Pages from './pages/Pages';
 import PageDetail from './pages/PageDetail';
+import Invoices from './pages/Invoices';
 
 const theme = createTheme({
   palette: {
@@ -199,6 +201,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="orders" element={<Orders />} />
+              <Route path="orders/:id" element={<OrderDetail />} />
               <Route path="products" element={<Products />} />
               <Route path="products/add" element={<ProductDetail />} />
               <Route path="products/edit/:id" element={<ProductDetail />} />
@@ -226,6 +229,7 @@ function App() {
               <Route path="pages" element={<Pages />} />
               <Route path="pages/create" element={<PageDetail />} />
               <Route path="pages/edit/:id" element={<PageDetail />} />
+              <Route path="invoices" element={<Invoices />} />
             </Route>
           </Routes>
         </Router>

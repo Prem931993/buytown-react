@@ -300,71 +300,34 @@ export const adminService = {
 
   // Dashboard operations
   dashboard: {
-    // Get dashboard summary
     getSummary: async () => {
       const response = await adminApiClient.get('/dashboard/summary');
       return response.data;
     },
-    // Get orders awaiting confirmation count
     getOrdersAwaitingConfirmation: async () => {
-      const response = await adminApiClient.get('/dashboard/orders-awaiting-confirmation');
+      const response = await adminApiClient.get('/dashboard/orders-awaiting-confirmation/list');
       return response.data;
     },
-    // Get low stock products
-    getLowStockProducts: async (limit = 10) => {
+    getLowStockProducts: async (limit) => {
       const response = await adminApiClient.get(`/dashboard/low-stock-products?limit=${limit}`);
       return response.data;
     },
-    // Get recent sales
-    getRecentSales: async (days = 30) => {
+    getRecentSales: async (days) => {
       const response = await adminApiClient.get(`/dashboard/recent-sales?days=${days}`);
       return response.data;
     },
-    // Get popular products
-    getPopularProducts: async (limit = 10) => {
+    getPopularProducts: async (limit) => {
       const response = await adminApiClient.get(`/dashboard/popular-products?limit=${limit}`);
       return response.data;
     },
-    // Get most used delivery vehicles
     getMostUsedDeliveryVehicles: async () => {
       const response = await adminApiClient.get('/dashboard/delivery-vehicles');
       return response.data;
     },
-    // Get top customers
-    getTopCustomers: async (limit = 10) => {
+    getTopCustomers: async (limit) => {
       const response = await adminApiClient.get(`/dashboard/top-customers?limit=${limit}`);
       return response.data;
-    },
-    // Get total products count
-    getTotalProductsCount: async () => {
-      const response = await adminApiClient.get('/dashboard/total-products');
-      return response.data;
-    },
-    // Get total orders count
-    getTotalOrdersCount: async () => {
-      const response = await adminApiClient.get('/dashboard/total-orders');
-      return response.data;
-    },
-    // Get total users count
-    getTotalUsersCount: async () => {
-      const response = await adminApiClient.get('/dashboard/total-users');
-      return response.data;
-    },
-    // Get total revenue
-    getTotalRevenue: async () => {
-      const response = await adminApiClient.get('/dashboard/total-revenue');
-      return response.data;
-    },
-    // Get monthly revenue
-    getMonthlyRevenue: async () => {
-      const response = await adminApiClient.get('/dashboard/monthly-revenue');
-      return response.data;
-    },
-    // Get order statistics
-    getOrderStatistics: async () => {
-      const response = await adminApiClient.get('/dashboard/order-statistics');
-      return response.data;
-    },
+    }
   },
 
   // Configuration operations
@@ -572,6 +535,63 @@ export const adminService = {
     // Get order statistics
     getStatistics: async () => {
       const response = await adminApiClient.get('/orders/statistics');
+      return response.data;
+    },
+    // Approve order
+    approve: async (orderId, deliveryPersonId, deliveryDistance) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/approve`, {
+        delivery_person_id: deliveryPersonId,
+        delivery_distance: deliveryDistance
+      });
+      return response.data;
+    },
+    // Reject order
+    reject: async (orderId, rejectionReason) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/reject`, {
+        rejection_reason: rejectionReason
+      });
+      return response.data;
+    },
+    // Assign delivery person
+    assignDeliveryPerson: async (orderId, deliveryPersonId, deliveryDistance) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/assign-delivery`, {
+        delivery_person_id: deliveryPersonId,
+        delivery_distance: deliveryDistance
+      });
+      return response.data;
+    },
+    // Mark order as completed
+    markOrderCompleted: async (orderId) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/complete`);
+      return response.data;
+    },
+    // PDF operations
+    generateInvoicePDF: async (orderId) => {
+      const response = await adminApiClient.post(`/orders/${orderId}/generate-invoice-pdf`, {}, {
+        responseType: 'blob'
+      });
+      return response.data;
+    },
+    generateConfirmationPDF: async (orderId) => {
+      const response = await adminApiClient.post(`/orders/${orderId}/generate-confirmation-pdf`, {}, {
+        responseType: 'blob'
+      });
+      return response.data;
+    },
+    getInvoicesByOrder: async (orderId) => {
+      const response = await adminApiClient.get(`/orders/${orderId}/invoices`);
+      return response.data;
+    },
+    getAllInvoices: async (params = {}) => {
+      const response = await adminApiClient.get('/orders/invoices', { params });
+      return response.data;
+    },
+    getInvoices: async (params = {}) => {
+      const response = await adminApiClient.get('/invoices', { params });
+      return response.data;
+    },
+    getInvoiceById: async (invoiceId) => {
+      const response = await adminApiClient.get(`/invoices/${invoiceId}`);
       return response.data;
     },
   },

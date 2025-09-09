@@ -150,6 +150,12 @@ const menuItems = [
       { text: 'Banner Upload', path: '/general/banner-upload' }
     ]
   },
+  {
+    text: 'Invoices',
+    icon: <Receipt />,
+    path: '/invoices',
+    badge: null
+  },
 ];
 
 function Layout() {
@@ -452,6 +458,7 @@ function Layout() {
                location.pathname === '/products' ? 'Products Management' :
                location.pathname === '/users' ? 'Users Management' :
                location.pathname === '/orders' ? 'Orders Management' :
+               location.pathname === '/invoices' ? 'Invoices Management' :
                location.pathname === '/reports' ? 'Reports & Analytics' :
                location.pathname === '/sms' ? 'SMS Configuration & OTP Management' :
                location.pathname === '/email' ? 'Email Configuration' :

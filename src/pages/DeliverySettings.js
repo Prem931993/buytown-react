@@ -19,6 +19,7 @@ import {
   RadioButtonChecked as RadiusIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
+import { adminService } from '../services/adminService.js';
 
 
 function DeliverySettings() {
@@ -38,18 +39,22 @@ function DeliverySettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      // For now, using mock data since the API might not be fully implemented
-      const mockSettings = {
-        center_point: '19.0760,72.8777', // Mumbai coordinates
-        delivery_radius_km: 25,
-      };
-      setSettings(mockSettings);
+      const response = await adminService.delivery.getSettings();
+      setSettings({
+        center_point: response.settings?.center_point || '',
+        delivery_radius_km: response.settings?.delivery_radius_km || 10,
+      });
     } catch (error) {
       console.error('Error fetching delivery settings:', error);
+      // Fallback to default settings if API fails
+      setSettings({
+        center_point: '',
+        delivery_radius_km: 10,
+      });
       setSnackbar({
         open: true,
-        message: 'Failed to fetch delivery settings',
-        severity: 'error',
+        message: 'Failed to fetch delivery settings, using defaults',
+        severity: 'warning',
       });
     } finally {
       setLoading(false);
@@ -116,7 +121,7 @@ function DeliverySettings() {
       }
 
       // Save settings
-      console.log('Saving delivery settings:', settings);
+      await adminService.delivery.updateSettings(settings);
       setSnackbar({
         open: true,
         message: 'Delivery settings saved successfully',

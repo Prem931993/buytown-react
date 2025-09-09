@@ -84,8 +84,10 @@ function Dashboard() {
         users: summaryResponse.data?.summary?.totalUsers || 0,
       });
 
+      console.log("ordersResponse", ordersResponse, recentSalesResponse);
+
       // Update pending orders
-      setPendingOrders(ordersResponse.data?.count ? [ordersResponse.data] : []);
+      setPendingOrders(ordersResponse.data?.orders || []);
 
       // Update low stock products
       setLowStockProducts(lowStockResponse.data?.products || []);
@@ -319,12 +321,12 @@ function Dashboard() {
                     }}
                   >
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {order.id}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                                              {order.customer} • {formatINR(order.amount)}
-                                            </Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {order.order_number}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                                            {order.user_id} • {formatINR(order.total_amount)}
+                                          </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <IconButton
@@ -463,15 +465,15 @@ function Dashboard() {
                     >
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {sale.id}
+                          {sale.order_number}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {sale.customer} • {sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}
+                          {sale.customer_name} • {sale.created_at ? new Date(sale.created_at).toLocaleDateString() : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600, mr: 1 }}>
-                                                  {formatINR(sale.amount)}
+                                                  {formatINR(sale.total_amount)}
                                                 </Typography>
                         <ArrowForward fontSize="small" sx={{ color: '#10b981', fontSize: 16 }} />
                       </Box>
