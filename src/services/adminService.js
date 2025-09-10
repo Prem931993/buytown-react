@@ -327,6 +327,10 @@ export const adminService = {
     getTopCustomers: async (limit) => {
       const response = await adminApiClient.get(`/dashboard/top-customers?limit=${limit}`);
       return response.data;
+    },
+    getAllCustomersWithOrders: async () => {
+      const response = await adminApiClient.get('/dashboard/all-customers-with-orders');
+      return response.data;
     }
   },
 

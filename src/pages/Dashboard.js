@@ -99,10 +99,10 @@ function Dashboard() {
       setPopularProducts(popularProductsResponse.data?.products || []);
 
       // Update most used vehicles
-      setMostUsedVehicles(mostUsedVehiclesResponse.data?.vehicles || []);
+      setMostUsedVehicles(mostUsedVehiclesResponse?.data?.vehicles || []);
 
       // Update top customers
-      setTopCustomers(topCustomersResponse.data?.customers || []);
+      setTopCustomers(topCustomersResponse?.customers || []);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -333,7 +333,7 @@ function Dashboard() {
                         size="small"
                         color="success"
                         sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)' }}
-                        onClick={() => navigate(`/orders/edit/${order.id}`)}
+                        onClick={() => navigate(`/orders/${order.id}`)}
                       >
                         <CheckCircleIcon fontSize="small" />
                       </IconButton>
@@ -583,7 +583,7 @@ function Dashboard() {
                 ) : (
                   mostUsedVehicles.map((vehicle) => (
                     <Box
-                      key={vehicle.id}
+                      key={vehicle.delivery_vehicle}
                       sx={{
                         p: 2,
                         borderBottom: '1px solid',
@@ -596,10 +596,10 @@ function Dashboard() {
                     >
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {vehicle.name}
+                          {vehicle.delivery_vehicle}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {vehicle.id} • {vehicle.type} • {vehicle.usageCount} deliveries
+                          Deliveries: {vehicle.usage_count}
                         </Typography>
                       </Box>
                       <Box>
@@ -665,15 +665,15 @@ function Dashboard() {
                     >
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {customer.name}
+                          {customer.firstname} {customer.lastname}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {customer.id} • {customer.totalOrders} orders
+                          {customer.email} • {customer.order_count} orders
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600, mr: 1 }}>
-                          {formatINR(customer.totalSpent)}
+                          {formatINR(customer.total_spent)}
                         </Typography>
                         <Avatar
                           sx={{

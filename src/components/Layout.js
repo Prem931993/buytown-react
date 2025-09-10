@@ -59,7 +59,11 @@ const menuItems = [
     text: 'Orders',
     icon: <ShoppingCart />,
     path: '/orders',
-    badge: '12'
+    badge: '12',
+    children: [
+      { text: 'All Orders', path: '/orders' },
+      { text: 'Ordered Customers', path: '/orders/customers' }
+    ]
   },
   {
     text: 'Products',
@@ -458,6 +462,7 @@ function Layout() {
                location.pathname === '/products' ? 'Products Management' :
                location.pathname === '/users' ? 'Users Management' :
                location.pathname === '/orders' ? 'Orders Management' :
+               location.pathname === '/orders/customers' ? 'Ordered Customers' :
                location.pathname === '/invoices' ? 'Invoices Management' :
                location.pathname === '/reports' ? 'Reports & Analytics' :
                location.pathname === '/sms' ? 'SMS Configuration & OTP Management' :

@@ -16,6 +16,7 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
+import OrderedCustomers from './pages/OrderedCustomers';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
 import Reports from './pages/Reports';
@@ -201,6 +202,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="orders" element={<Orders />} />
+              <Route path="orders/customers" element={<OrderedCustomers />} />
               <Route path="orders/:id" element={<OrderDetail />} />
               <Route path="products" element={<Products />} />
               <Route path="products/add" element={<ProductDetail />} />
