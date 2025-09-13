@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import generalSettingsService from '../services/generalSettingsService';
 import categoryService from '../services/categoryService.js';
- import {
+import {
   Box,
   Typography,
   Card,
@@ -20,11 +20,6 @@ import categoryService from '../services/categoryService.js';
   Alert,
   CircularProgress,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
   Autocomplete,
 } from '@mui/material';
 import {
@@ -38,7 +33,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
