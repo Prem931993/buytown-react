@@ -78,6 +78,28 @@ function OrderDetail() {
     confirmation: false,
   });
 
+  const calculateDeliveryCharges = useCallback(async (vehicleId, distance) => {
+    if (!vehicleId || !distance || isNaN(distance) || Number(distance) <= 0) {
+      setCalculatedDeliveryCharges(0);
+      return;
+    }
+
+    try {
+      // Use the new API endpoint to calculate delivery charges based on vehicle
+      const response = await adminService.orders.calculateDeliveryCharge(orderDetails.id, vehicleId);
+
+      if (response.success) {
+        setCalculatedDeliveryCharges(response.delivery_charge);
+      } else {
+        setCalculatedDeliveryCharges(0);
+        console.error('Failed to calculate delivery charges:', response.error);
+      }
+    } catch (error) {
+      console.error('Error calculating delivery charges:', error);
+      setCalculatedDeliveryCharges(0);
+    }
+  }, [orderDetails?.id]);
+
   useEffect(() => {
     fetchOrderDetails();
     fetchVehicles();
@@ -98,7 +120,7 @@ function OrderDetail() {
     } else {
       setCalculatedDeliveryCharges(0);
     }
-  }, [selectedVehicle, deliveryDistance]);
+  }, [selectedVehicle, deliveryDistance, calculateDeliveryCharges]);
   
 
   const fetchOrderDetails = async () => {
@@ -162,28 +184,6 @@ function OrderDetail() {
       setVehicles([]);
     } finally {
       setLoadingVehicles(false);
-    }
-  };
-
-  const calculateDeliveryCharges = async (vehicleId, distance) => {
-    if (!vehicleId || !distance || isNaN(distance) || Number(distance) <= 0) {
-      setCalculatedDeliveryCharges(0);
-      return;
-    }
-
-    try {
-      // Use the new API endpoint to calculate delivery charges based on vehicle
-      const response = await adminService.orders.calculateDeliveryCharge(orderDetails.id, vehicleId);
-
-      if (response.success) {
-        setCalculatedDeliveryCharges(response.delivery_charge);
-      } else {
-        setCalculatedDeliveryCharges(0);
-        console.error('Failed to calculate delivery charges:', response.error);
-      }
-    } catch (error) {
-      console.error('Error calculating delivery charges:', error);
-      setCalculatedDeliveryCharges(0);
     }
   };
 
