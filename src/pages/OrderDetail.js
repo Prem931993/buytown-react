@@ -93,12 +93,12 @@ function OrderDetail() {
 
   useEffect(() => {
     const dist = deliveryDistance && !isNaN(Number(deliveryDistance)) ? Number(deliveryDistance) : 0;
-    if (selectedDeliveryPerson && dist > 0) {
-      calculateDeliveryCharges(selectedDeliveryPerson, dist);
+    if (selectedVehicle && dist > 0) {
+      calculateDeliveryCharges(selectedVehicle, dist);
     } else {
       setCalculatedDeliveryCharges(0);
     }
-  }, [selectedDeliveryPerson, deliveryDistance]);
+  }, [selectedVehicle, deliveryDistance]);
   
 
   const fetchOrderDetails = async () => {
@@ -165,24 +165,24 @@ function OrderDetail() {
     }
   };
 
-  const calculateDeliveryCharges = async (deliveryPersonId, distance) => {
-    if (!deliveryPersonId || !distance || isNaN(distance) || Number(distance) <= 0) {
+  const calculateDeliveryCharges = async (vehicleId, distance) => {
+    if (!vehicleId || !distance || isNaN(distance) || Number(distance) <= 0) {
       setCalculatedDeliveryCharges(0);
       return;
     }
 
     try {
-      // Get delivery person's vehicle rate
-      const deliveryPerson = await adminService.vehicles.getVehiclesWithDeliveryPersons();
-      const personData = deliveryPerson.find(p => p.id === deliveryPersonId);
+      // Use the new API endpoint to calculate delivery charges based on vehicle
+      const response = await adminService.orders.calculateDeliveryCharge(orderDetails.id, vehicleId);
 
-      if (personData && personData.vehicle && personData.vehicle.rate_per_km) {
-        const charges = Number(distance) * Number(personData.vehicle.rate_per_km);
-        setCalculatedDeliveryCharges(charges);
+      if (response.success) {
+        setCalculatedDeliveryCharges(response.delivery_charge);
       } else {
         setCalculatedDeliveryCharges(0);
+        console.error('Failed to calculate delivery charges:', response.error);
       }
     } catch (error) {
+      console.error('Error calculating delivery charges:', error);
       setCalculatedDeliveryCharges(0);
     }
   };
@@ -207,7 +207,7 @@ function OrderDetail() {
           // Use deliveryDistance state or fallback to orderDetails.deliveryDistance
           const dist = deliveryDistance && !isNaN(Number(deliveryDistance)) ? Number(deliveryDistance) : (orderDetails?.deliveryDistance || 0);
           if (dist > 0) {
-            calculateDeliveryCharges(firstDeliveryPerson.id, dist);
+            calculateDeliveryCharges(vehicleId, dist);
           } else {
             setCalculatedDeliveryCharges(0);
           }
@@ -235,7 +235,7 @@ function OrderDetail() {
       : orderDetails?.deliveryDistance || 0;
 
     if (deliveryPersonId && effectiveDistance > 0) {
-      calculateDeliveryCharges(deliveryPersonId, effectiveDistance);
+      calculateDeliveryCharges(selectedVehicle, effectiveDistance);
     } else {
       setCalculatedDeliveryCharges(0);
     }
@@ -254,6 +254,11 @@ function OrderDetail() {
 
       switch (action) {
         case 'approve':
+          if (!selectedVehicle) {
+            setError('Please select a vehicle before approving the order.');
+            setActionLoading(false);
+            return;
+          }
           if (!selectedDeliveryPerson) {
             setError('Please select a delivery person before approving the order.');
             setActionLoading(false);
@@ -265,7 +270,7 @@ function OrderDetail() {
             return;
           }
           setError('');
-          response = await adminService.orders.approve(id, selectedDeliveryPerson, effectiveDeliveryDistance);
+          response = await adminService.orders.approve(id, selectedVehicle, effectiveDeliveryDistance, selectedDeliveryPerson);
           break;
         case 'reject':
           if (!rejectReason.trim()) {
@@ -594,23 +599,17 @@ function OrderDetail() {
                   </Typography>
                   <Typography variant="body2">{orderDetails.shippingAddress?.country || 'N/A'}</Typography>
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      <strong>Shipping Method:</strong> {orderDetails.shippingMethod || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Tracking Number:</strong> {orderDetails.trackingNumber || 'N/A'}
-                    </Typography>
                   <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationOn fontSize="small" />
                     <strong>Delivery Distance:</strong> {deliveryDistance ? `${deliveryDistance} km` : 'N/A'}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <MonetizationOn fontSize="small" />
-                    <strong>Delivery Charges:</strong> ₹{calculatedDeliveryCharges.toFixed(2)}
+                    <strong>Delivery Charges:</strong> ₹{orderDetails?.deliveryCharges ? orderDetails.deliveryCharges : calculatedDeliveryCharges.toFixed(2)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Person fontSize="small" />
-                    <strong>Delivery Person:</strong> {selectedDeliveryPerson ? deliveryPersons.find(p => p.id === selectedDeliveryPerson)?.name || 'N/A' : 'N/A'}
+                    <strong>Delivery Person:</strong> {orderDetails?.deliveryDriver ? orderDetails.deliveryDriver :selectedDeliveryPerson ? deliveryPersons.find(p => p.id === selectedDeliveryPerson)?.name || 'N/A' : 'N/A'}
                   </Typography>
                   </Box>
                 </CardContent>
@@ -735,10 +734,10 @@ function OrderDetail() {
                 <TableRow>
                   <TableCell colSpan={3} />
                   <TableCell align="right">
-                    <Typography variant="body2">Shipping:</Typography>
+                    <Typography variant="body2">Delivery Charges:</Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <Typography variant="body2">₹{orderDetails.shippingCost?.toFixed(2) || '0.00'}</Typography>
+                    <Typography variant="body2">₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges?.toFixed(2) || '0.00' : calculatedDeliveryCharges.toFixed(2)}</Typography>
                   </TableCell>
                 </TableRow>
                 {orderDetails.tax > 0 && (
@@ -749,17 +748,6 @@ function OrderDetail() {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2">₹{orderDetails.tax?.toFixed(2) || '0.00'}</Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-                {(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) && (
-                  <TableRow>
-                    <TableCell colSpan={3} />
-                    <TableCell align="right">
-                      <Typography variant="body2">Delivery Charges:</Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2">₹{orderDetails.deliveryCharges?.toFixed(2) || '0.00'}</Typography>
                     </TableCell>
                   </TableRow>
                 )}

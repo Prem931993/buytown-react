@@ -30,7 +30,7 @@ import {
   Close as CloseIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import adminService from '../services/adminService';
 
 function ProductImport() {
   const navigate = useNavigate();
@@ -77,19 +77,11 @@ function ProductImport() {
     setLoading(true);
     
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Send to API
-      const response = await axios.post('/products/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
+      // Use adminService to import products (includes dual token authentication)
+      const response = await adminService.products.import(file);
+
       // Handle success
-      setImportResults(response.data);
+      setImportResults(response);
       setSnackbar({
         open: true,
         message: 'Products imported successfully',
@@ -97,17 +89,28 @@ function ProductImport() {
       });
     } catch (error) {
       console.error('Error importing products:', error);
-      
-      // Handle error response from API if available
-      if (error.response && error.response.data) {
+
+      // Check if error.response exists and has status 403 (forbidden)
+      if (error.response && error.response.status === 403) {
+        setSnackbar({
+          open: true,
+          message: 'Import forbidden: Please check your authorization tokens.',
+          severity: 'error',
+        });
+      } else if (error.response && error.response.data) {
         setImportResults(error.response.data);
+        setSnackbar({
+          open: true,
+          message: error.response.data.message || 'Failed to import products',
+          severity: 'error',
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'Failed to import products',
+          severity: 'error',
+        });
       }
-      
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || 'Failed to import products',
-        severity: 'error',
-      });
     } finally {
       setLoading(false);
     }

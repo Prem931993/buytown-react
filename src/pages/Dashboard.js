@@ -84,8 +84,6 @@ function Dashboard() {
         users: summaryResponse.data?.summary?.totalUsers || 0,
       });
 
-      console.log("ordersResponse", ordersResponse, recentSalesResponse);
-
       // Update pending orders
       setPendingOrders(ordersResponse.data?.orders || []);
 
@@ -631,7 +629,7 @@ function Dashboard() {
               <Button
                 size="small"
                 endIcon={<ArrowForward />}
-                onClick={() => handleCardClick('/users')}
+                onClick={() => handleCardClick('/orders/customers')}
                 sx={{ color: '#ef4444', '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.08)' } }}
               >
                 View All

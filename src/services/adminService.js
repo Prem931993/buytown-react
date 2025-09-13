@@ -514,6 +514,20 @@ export const adminService = {
     },
   },
 
+  // General Settings operations
+  generalSettings: {
+    // Get general settings
+    getSettings: async () => {
+      const response = await adminApiClient.get('/general-settings');
+      return response.data;
+    },
+    // Update general settings
+    updateSettings: async (settingsData) => {
+      const response = await adminApiClient.put('/general-settings', settingsData);
+      return response.data;
+    },
+  },
+
   // Order operations
   orders: {
     // Get all orders
@@ -542,10 +556,11 @@ export const adminService = {
       return response.data;
     },
     // Approve order
-    approve: async (orderId, deliveryPersonId, deliveryDistance) => {
+    approve: async (orderId, vehicleId, deliveryDistance, deliveryPersonId = null) => {
       const response = await adminApiClient.put(`/orders/${orderId}/approve`, {
-        delivery_person_id: deliveryPersonId,
-        delivery_distance: deliveryDistance
+        vehicle_id: vehicleId,
+        delivery_distance: deliveryDistance,
+        delivery_person_id: deliveryPersonId
       });
       return response.data;
     },
@@ -596,6 +611,13 @@ export const adminService = {
     },
     getInvoiceById: async (invoiceId) => {
       const response = await adminApiClient.get(`/invoices/${invoiceId}`);
+      return response.data;
+    },
+    // Calculate delivery charges
+    calculateDeliveryCharge: async (orderId, vehicleId) => {
+      const response = await adminApiClient.post(`/orders/${orderId}/calculate-delivery-charge`, {
+        vehicle_id: vehicleId
+      });
       return response.data;
     },
   },
