@@ -66,22 +66,22 @@ function Products() {
     totalPages: 0
   });
   
-  const fetchProducts = useCallback(async (isSearch = false) => {
+  const fetchProducts = useCallback(async (isSearch = false, pageOverride = null) => {
     try {
       setLoading(true);
-      
+
       // Prepare query parameters
       const params = {
-        page: pagination.page,
+        page: pageOverride !== null ? pageOverride : pagination.page,
         limit: pagination.limit,
         search: searchQuery || undefined,
         category_id: filters.category_id || undefined,
         brand_id: filters.brand || undefined,
       };
-      
+
       // Remove undefined parameters
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
+
       // Fetch products from API
       const response = await adminApiClient.get('/products', { params });
 
@@ -104,7 +104,7 @@ function Products() {
     } finally {
       setLoading(false);
     }
-  }, [pagination, searchQuery, filters.category_id, filters.brand]);
+  }, [pagination.page, pagination.limit, searchQuery, filters.category_id, filters.brand]);
   
   // Separate function for initial data fetching to avoid dependency issues
   const fetchInitialProducts = useCallback(async () => {
@@ -565,9 +565,10 @@ function Products() {
               count={pagination.total}
               page={pagination.page - 1} // MUI uses 0-based indexing
               onPageChange={(event, newPage) => {
-                setPagination({ ...pagination, page: newPage + 1 });
+                const newPageNumber = newPage + 1;
+                setPagination({ ...pagination, page: newPageNumber });
                 // Fetch products with new page, using search if there's a search query
-                fetchProducts(!!searchQuery);
+                fetchProducts(!!searchQuery, newPageNumber);
               }}
               rowsPerPage={pagination.limit}
               onRowsPerPageChange={(event) => {
