@@ -200,6 +200,12 @@ function ProductImport() {
                     <ListItemIcon>
                       <CheckCircleIcon color="primary" fontSize="small" />
                     </ListItemIcon>
+                    <ListItemText primary="hsn_code - HSN/SAC code for GST compliance" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <CheckCircleIcon color="primary" fontSize="small" />
+                    </ListItemIcon>
                     <ListItemText primary="price (required) - Selling price" />
                   </ListItem>
                   <ListItem>

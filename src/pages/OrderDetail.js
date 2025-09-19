@@ -425,7 +425,7 @@ function OrderDetail() {
     <Box sx={{ py: 3, bgcolor: 'grey.50', minHeight: '100vh' }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3 }}>
         <Typography variant="h4" sx={{ mb: 4, fontWeight: 600, color: 'primary.main' }}>
-          Order Details: {orderDetails.id}
+          Order Details: {orderDetails.order_number || orderDetails.id}
         </Typography>
 
         <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -560,6 +560,18 @@ function OrderDetail() {
                     Order Summary
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Order ID:</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {orderDetails.id || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Order Number:</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {orderDetails.order_number || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2">Order Date:</Typography>
                     <Typography variant="body2" fontWeight={500}>
                       {orderDetails.orderDate || 'N/A'}
@@ -606,6 +618,10 @@ function OrderDetail() {
                   <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <MonetizationOn fontSize="small" />
                     <strong>Delivery Charges:</strong> ₹{orderDetails?.deliveryCharges ? orderDetails.deliveryCharges : calculatedDeliveryCharges.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocalShipping fontSize="small" />
+                    <strong>Delivery Vehicle:</strong> {orderDetails?.vehicle ? `${orderDetails.vehicle.vehicle_number} (${orderDetails.vehicle.vehicle_type})` : selectedVehicle ? `${vehicles.find(v => v.id === selectedVehicle)?.vehicle_number || 'N/A'} (${vehicles.find(v => v.id === selectedVehicle)?.vehicle_type || 'N/A'})` : 'N/A'}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Person fontSize="small" />
@@ -703,9 +719,12 @@ function OrderDetail() {
                 <TableRow sx={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
                   <TableCell>Product</TableCell>
                   <TableCell>SKU</TableCell>
+                  <TableCell>HSN Code</TableCell>
                   <TableCell align="right">Price</TableCell>
                   <TableCell align="right">Quantity</TableCell>
-                  <TableCell align="right">Total</TableCell>
+                  <TableCell align="right">Tax Rate</TableCell>
+                  <TableCell align="right">Tax Amount</TableCell>
+                  <TableCell align="right">Total without Tax</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -713,26 +732,29 @@ function OrderDetail() {
                   <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.sku}</TableCell>
+                    <TableCell>{item.hsn_code || 'N/A'}</TableCell>
                     <TableCell align="right">₹{item.price?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell align="right">{item.quantity}</TableCell>
+                    <TableCell align="right">{item.gst_rate ? `${item.gst_rate}%` : '0%'}</TableCell>
+                    <TableCell align="right">₹{item.tax_amount?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell align="right">₹{item.total?.toFixed(2) || '0.00'}</TableCell>
                   </TableRow>
                 ))}
+              <TableRow>
+                <TableCell colSpan={6} />
+                <TableCell align="right">
+                  <Typography variant="body2" fontWeight={500}>
+                    Subtotal:
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2" fontWeight={500}>
+                    ₹{orderDetails.subtotal?.toFixed(2) || '0.00'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
                 <TableRow>
-                  <TableCell colSpan={3} />
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight={500}>
-                      Subtotal:
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight={500}>
-                      ₹{orderDetails.subtotal?.toFixed(2) || '0.00'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell colSpan={3} />
+                  <TableCell colSpan={6} />
                   <TableCell align="right">
                     <Typography variant="body2">Delivery Charges:</Typography>
                   </TableCell>
@@ -742,7 +764,7 @@ function OrderDetail() {
                 </TableRow>
                 {orderDetails.tax > 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} />
+                    <TableCell colSpan={6} />
                     <TableCell align="right">
                       <Typography variant="body2">Tax:</Typography>
                     </TableCell>
@@ -753,7 +775,7 @@ function OrderDetail() {
                 )}
                 {orderDetails.discount > 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} />
+                    <TableCell colSpan={6} />
                     <TableCell align="right">
                       <Typography variant="body2">Discount:</Typography>
                     </TableCell>
@@ -763,7 +785,7 @@ function OrderDetail() {
                   </TableRow>
                 )}
                 <TableRow>
-                  <TableCell colSpan={3} />
+                  <TableCell colSpan={6} />
                   <TableCell align="right">
                     <Typography variant="subtitle1" fontWeight={600}>
                       Total:

@@ -63,11 +63,7 @@ function ProductDetail() {
     brand_id: '',
     color: '',
     size_dimension: '',
-    unit: '',
     weight_kg: '',
-    length_mm: '',
-    width_mm: '',
-    height_mm: '',
     selling_price: '',
     price: '', // This is the original price field
     discount: '',
@@ -78,11 +74,16 @@ function ProductDetail() {
     status: 1, // Default to active status
     product_type: 'simple', // Default to simple product
     parent_product_id: '', // For child products
+    hsn_code: '', // Added HSN code field
+    related_product_ids: [], // Added related products field
+    variation_id: '', // Added variation field
   });
-  
+
   // State for parent-child relationships
   const [allProducts, setAllProducts] = useState([]); // All products for selection
   const [selectedChildProducts, setSelectedChildProducts] = useState([]); // Selected child products for parent
+  const [childProductsSearch, setChildProductsSearch] = useState(''); // Search for child products
+  const [relatedProductsSearch, setRelatedProductsSearch] = useState(''); // Search for related products
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -141,18 +142,13 @@ function ProductDetail() {
             ]);
           }
 
-          // Fetch variations
+          // Fetch variations for dropdown
           try {
             const variationsResponse = await adminService.variations.getForDropdown();
             setVariations(variationsResponse.variations || []);
           } catch (error) {
             console.error('Error fetching variations:', error);
-            setVariations([
-              { id: 1, label: 'Color', value: 'Red' },
-              { id: 2, label: 'Color', value: 'Blue' },
-              { id: 3, label: 'Size', value: 'Small' },
-              { id: 4, label: 'Size', value: 'Large' }
-            ]);
+            setVariations([]);
           }
 
         // If in edit mode, fetch product details
@@ -185,11 +181,7 @@ function ProductDetail() {
               brand_id: productData.brand_id || '',
               color: productData.color || '',
               size_dimension: productData.size_dimension || '',
-              unit: productData.unit || '',
               weight_kg: productData.weight_kg ? productData.weight_kg.toString() : '',
-              length_mm: productData.length_mm ? productData.length_mm.toString() : '',
-              width_mm: productData.width_mm ? productData.width_mm.toString() : '',
-              height_mm: productData.height_mm ? productData.height_mm.toString() : '',
               selling_price: productData.selling_price ? productData.selling_price.toString() : '',
               price: productData.price ? productData.price.toString() : '', // Original price field
               discount: productData.discount ? productData.discount.toString() : '',
@@ -200,6 +192,8 @@ function ProductDetail() {
               status: productData.status || 1,
               product_type: productData.product_type || 'simple',
               parent_product_id: productData.parent_product_id || '',
+              hsn_code: productData.hsn_code || '', // Added HSN code field
+              variation_id: productData.variation_id || '', // Added variation field
             });
 
             // Set existing images
@@ -212,20 +206,25 @@ function ProductDetail() {
               setSelectedChildProducts(productData.childProducts.map(child => child.id));
             }
 
+            // Set related products if available
+            if (productData.relatedProducts && Array.isArray(productData.relatedProducts)) {
+              setFormData(prev => ({
+                ...prev,
+                related_product_ids: productData.relatedProducts.map(rp => rp.id)
+              }));
+            }
+
             console.log('Form data set:', {
               name: productData.name || '',
               description: productData.description || '',
               sku_code: productData.sku_code || '',
+              hsn_code: productData.hsn_code || '',
               category_id: productData.category_id || '',
               subcategory_id: productData.subcategory_id || '',
               brand_id: productData.brand_id || '',
               color: productData.color || '',
               size_dimension: productData.size_dimension || '',
-              unit: productData.unit || '',
               weight_kg: productData.weight_kg ? productData.weight_kg.toString() : '',
-              length_mm: productData.length_mm ? productData.length_mm.toString() : '',
-              width_mm: productData.width_mm ? productData.width_mm.toString() : '',
-              height_mm: productData.height_mm ? productData.height_mm.toString() : '',
               selling_price: productData.selling_price ? productData.selling_price.toString() : '',
               price: productData.price ? productData.price.toString() : '', // Original price field
               discount: productData.discount ? productData.discount.toString() : '',
@@ -236,6 +235,7 @@ function ProductDetail() {
               status: productData.status || 1,
               product_type: productData.product_type || 'simple',
               parent_product_id: productData.parent_product_id || '',
+              variation_id: productData.variation_id || '',
             }); // Debug log
 
           } catch (error) {
@@ -250,8 +250,8 @@ function ProductDetail() {
         
         // Fetch all products for parent-child relationship management
         try {
-          const productsResponse = await adminService.products.getAll();
-          setAllProducts(productsResponse || []);
+          const productsResponse = await adminService.products.getAll({ limit: 10000 });
+          setAllProducts(productsResponse.products || []);
         } catch (error) {
           console.error('Error fetching all products:', error);
         }
@@ -264,6 +264,8 @@ function ProductDetail() {
     
     fetchData();
   }, [id, isEditMode]);
+
+  // Removed variation related useEffects as per user request
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -323,9 +325,6 @@ function ProductDetail() {
         discount: formData.discount ? parseFloat(formData.discount) : '',
         gst: formData.gst ? parseFloat(formData.gst) : '',
         weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : '',
-        length_mm: formData.length_mm ? parseFloat(formData.length_mm) : '',
-        width_mm: formData.width_mm ? parseFloat(formData.width_mm) : '',
-        height_mm: formData.height_mm ? parseFloat(formData.height_mm) : '',
         stock: parseInt(formData.stock, 10) || 0,
         min_order_qty: parseInt(formData.min_order_qty, 10) || 1,
         delivery_flag: formData.delivery_flag,
@@ -335,6 +334,10 @@ function ProductDetail() {
         images_to_remove: imagesToRemove.length > 0 ? imagesToRemove : undefined,
         // Include child product IDs if this is a parent product
         child_product_ids: formData.product_type === 'parent' ? JSON.stringify(selectedChildProducts) : undefined,
+        // Include related product IDs
+        related_product_ids: formData.related_product_ids.length > 0 ? JSON.stringify(formData.related_product_ids) : undefined,
+        // Include variation ID
+        variation_id: formData.variation_id || undefined,
       };
 
       // Remove empty string values for optional fields
@@ -346,7 +349,7 @@ function ProductDetail() {
 
       // Create FormData object for file uploads
       const formDataObj = new FormData();
-      
+
       // Append all form data fields individually
       Object.keys(productData).forEach(key => {
         formDataObj.append(key, productData[key]);
@@ -552,6 +555,13 @@ function ProductDetail() {
                       value={formData.sku_code}
                       onChange={handleInputChange}
                     />
+                    <TextField
+                      fullWidth
+                      label="HSN Code"
+                      name="hsn_code"
+                      value={formData.hsn_code}
+                      onChange={handleInputChange}
+                    />
                     <Box>
                       <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                         Description
@@ -705,9 +715,9 @@ function ProductDetail() {
                           label="Search Available Products"
                           placeholder="Search by name or SKU..."
                           sx={{ mb: 2 }}
+                          value={childProductsSearch}
                           onChange={(e) => {
-                            // In a real implementation, you would filter the available products based on this search
-                            // For now, we'll just leave it as a placeholder
+                            setChildProductsSearch(e.target.value);
                           }}
                         />
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
@@ -717,6 +727,13 @@ function ProductDetail() {
                               {Array.isArray(allProducts) && allProducts
                                 .filter(product => product.product_type !== 'parent' && product.id !== parseInt(id))
                                 .filter(product => !selectedChildProducts.includes(product.id))
+                                .filter(product => {
+                                  const searchLower = childProductsSearch.toLowerCase();
+                                  return (
+                                    product.name.toLowerCase().includes(searchLower) ||
+                                    (product.sku_code && product.sku_code.toLowerCase().includes(searchLower))
+                                  );
+                                })
                                 .map((product) => (
                                   <Box
                                     key={product.id}
@@ -774,81 +791,210 @@ function ProductDetail() {
                     )}
                   </Box>
                 </Box>
-                
+
+                {/* Related Products Section */}
+                <Box>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
+                    Related Products (Max: 5)
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Search Available Products"
+                      placeholder="Search by name or SKU..."
+                      sx={{ mb: 2 }}
+                      value={relatedProductsSearch}
+                      onChange={(e) => {
+                        setRelatedProductsSearch(e.target.value);
+                      }}
+                    />
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                          Available Products
+                          {formData.related_product_ids.length >= 5 && (
+                            <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                              (Maximum limit reached)
+                            </Typography>
+                          )}
+                        </Typography>
+                        <Paper sx={{ height: 300, overflow: 'auto' }}>
+                          {Array.isArray(allProducts) && allProducts.length > 0 ? (
+                            allProducts
+                              .filter(product => product.id !== parseInt(id) && !formData.related_product_ids.includes(product.id))
+                              .filter(product => {
+                                const searchLower = relatedProductsSearch.toLowerCase();
+                                return (
+                                  product.name.toLowerCase().includes(searchLower) ||
+                                  (product.sku_code && product.sku_code.toLowerCase().includes(searchLower))
+                                );
+                              })
+                              .map((product) => (
+                                <Box
+                                  key={product.id}
+                                  sx={{
+                                    p: 1,
+                                    borderBottom: '1px solid #eee',
+                                    cursor: formData.related_product_ids.length >= 5 ? 'not-allowed' : 'pointer',
+                                    opacity: formData.related_product_ids.length >= 5 ? 0.5 : 1,
+                                    '&:hover': {
+                                      backgroundColor: formData.related_product_ids.length >= 5 ? 'transparent' : '#f5f5f5'
+                                    }
+                                  }}
+                                  onClick={() => {
+                                    if (formData.related_product_ids.length >= 5) {
+                                      setSnackbar({
+                                        open: true,
+                                        message: 'Maximum of 5 related products allowed',
+                                        severity: 'warning',
+                                      });
+                                      return;
+                                    }
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      related_product_ids: [...prev.related_product_ids, product.id]
+                                    }));
+                                  }}
+                                >
+                                  <Typography variant="body2">{product.name}</Typography>
+                                  <Typography variant="caption" color="textSecondary">SKU: {product.sku_code}</Typography>
+                                </Box>
+                              ))
+                          ) : (
+                            <Box sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="body2" color="textSecondary">
+                                No products available
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                          Selected Related Products ({formData.related_product_ids.length}/5)
+                        </Typography>
+                        <Paper sx={{ height: 300, overflow: 'auto' }}>
+                          {Array.isArray(allProducts) && allProducts.length > 0 ? (
+                            allProducts
+                              .filter(product => formData.related_product_ids.includes(product.id))
+                              .map((product) => (
+                                <Box
+                                  key={product.id}
+                                  sx={{
+                                    p: 1,
+                                    borderBottom: '1px solid #eee',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    '&:hover': {
+                                      backgroundColor: '#f5f5f5'
+                                    }
+                                  }}
+                                  onClick={() => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      related_product_ids: prev.related_product_ids.filter(id => id !== product.id)
+                                    }));
+                                  }}
+                                >
+                                  <Box>
+                                    <Typography variant="body2">{product.name}</Typography>
+                                    <Typography variant="caption" color="textSecondary">SKU: {product.sku_code}</Typography>
+                                  </Box>
+                                  <RemoveIcon />
+                                </Box>
+                              ))
+                          ) : (
+                            <Box sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="body2" color="textSecondary">
+                                No related products selected
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+
                 {/* Category and Brand Section */}
                 <Box>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
                     Category & Brand
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Category</InputLabel>
-                      <Select
-                        label="Category"
-                        name="category_id"
-                        value={formData.category_id}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <MenuItem value="">Select Category</MenuItem>
-                        {Array.isArray(categories) && categories.map((category) => (
-                          <MenuItem key={category.id} value={category.id}>
-                            {category.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Subcategory</InputLabel>
-                      <Select
-                        label="Subcategory"
-                        name="subcategory_id"
-                        value={formData.subcategory_id}
-                        onChange={handleInputChange}
-                      >
-                        <MenuItem value="">Select Subcategory</MenuItem>
-                        {Array.isArray(categories) && categories.filter(cat => cat.parent_id).map((subcategory) => (
-                          <MenuItem key={subcategory.id} value={subcategory.id}>
-                            {subcategory.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Brand</InputLabel>
-                      <Select
-                        label="Brand"
-                        name="brand_id"
-                        value={formData.brand_id}
-                        onChange={handleInputChange}
-                      >
-                        <MenuItem value="">Select Brand</MenuItem>
-                        {Array.isArray(brands) && brands.map((brand) => (
-                          <MenuItem key={brand.id} value={brand.id}>
-                            {brand.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    label="Category"
+                    name="category_id"
+                    value={formData.category_id}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <MenuItem value="">Select Category</MenuItem>
+                    {Array.isArray(categories) && categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <FormControl fullWidth size="small">
+                  <InputLabel>Subcategory</InputLabel>
+                  <Select
+                    label="Subcategory"
+                    name="subcategory_id"
+                    value={formData.subcategory_id}
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="">Select Subcategory</MenuItem>
+                    {Array.isArray(categories) && categories.filter(cat => cat.parent_id).map((subcategory) => (
+                      <MenuItem key={subcategory.id} value={subcategory.id}>
+                        {subcategory.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <FormControl fullWidth size="small">
+                  <InputLabel>Brand</InputLabel>
+                  <Select
+                    label="Brand"
+                    name="brand_id"
+                    value={formData.brand_id}
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="">Select Brand</MenuItem>
+                    {Array.isArray(brands) && brands.map((brand) => (
+                      <MenuItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Variation</InputLabel>
-                      <Select
-                        label="Variation"
-                        name="variation_id"
-                        value={formData.variation_id}
-                        onChange={handleInputChange}
-                      >
-                        <MenuItem value="">Select Variation</MenuItem>
-                        {Array.isArray(variations) && variations.map((variation) => (
-                          <MenuItem key={variation.id} value={variation.id}>
-                            {variation.label || variation.name} - {variation.value}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                {/* Variation Field */}
+                <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                  <InputLabel>Variation</InputLabel>
+                  <Select
+                    label="Variation"
+                    name="variation_id"
+                    value={formData.variation_id}
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="">Select Variation</MenuItem>
+                    {variations.map((variation) => (
+                      <MenuItem key={variation.id} value={variation.id}>
+                        {variation.label || variation.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+
                   </Box>
                 </Box>
                 
@@ -974,48 +1120,13 @@ function ProductDetail() {
                       value={formData.size_dimension}
                       onChange={handleInputChange}
                     />
-                    
-                    <TextField
-                      fullWidth
-                      label="Unit"
-                      name="unit"
-                      value={formData.unit}
-                      onChange={handleInputChange}
-                    />
-                    
+
                     <TextField
                       fullWidth
                       label="Weight (kg)"
                       name="weight_kg"
                       type="number"
                       value={formData.weight_kg}
-                      onChange={handleInputChange}
-                    />
-                    
-                    <TextField
-                      fullWidth
-                      label="Length (mm)"
-                      name="length_mm"
-                      type="number"
-                      value={formData.length_mm}
-                      onChange={handleInputChange}
-                    />
-                    
-                    <TextField
-                      fullWidth
-                      label="Width (mm)"
-                      name="width_mm"
-                      type="number"
-                      value={formData.width_mm}
-                      onChange={handleInputChange}
-                    />
-                    
-                    <TextField
-                      fullWidth
-                      label="Height (mm)"
-                      name="height_mm"
-                      type="number"
-                      value={formData.height_mm}
                       onChange={handleInputChange}
                     />
                   </Box>

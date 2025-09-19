@@ -34,8 +34,6 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   Visibility as VisibilityIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   ShoppingCart,
   LocalShipping,
   CheckCircle,
@@ -332,6 +330,7 @@ function Orders() {
             <TableHead>
               <TableRow sx={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
                 <TableCell>Order ID</TableCell>
+                <TableCell>Order Number</TableCell>
                 <TableCell>Customer</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Total</TableCell>
@@ -343,7 +342,7 @@ function Orders() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <CircularProgress size={40} />
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       Loading orders...
@@ -352,7 +351,7 @@ function Orders() {
                 </TableRow>
               ) : filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       No orders found
                     </Typography>
@@ -366,6 +365,11 @@ function Orders() {
                       <TableCell component="th" scope="row">
                         <Typography variant="body2" fontWeight={600}>
                           {order.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>
+                          {order.order_number || 'N/A'}
                         </Typography>
                       </TableCell>
                       <TableCell>{order.customer}</TableCell>
@@ -416,18 +420,6 @@ function Orders() {
                             <Person fontSize="small" />
                           </IconButton>
                         )}
-                        <IconButton
-                          size="small"
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          sx={{ color: 'error.main' }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))

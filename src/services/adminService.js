@@ -213,8 +213,8 @@ export const adminService = {
 
   // Product operations
   products: {
-    getAll: async () => {
-      const response = await adminApiClient.get('/products');
+    getAll: async (params = {}) => {
+      const response = await adminApiClient.get('/products', { params });
       return response.data;
     },
     getById: async (id) => {
@@ -255,6 +255,16 @@ export const adminService = {
     },
     getForDropdown: async () => {
       const response = await adminApiClient.get('/variations/dropdown');
+      return response.data;
+    },
+    autocompleteVariations: async (query) => {
+      const response = await adminApiClient.get('/variations/autocomplete', {
+        params: { q: query }
+      });
+      return response.data;
+    },
+    create: async (variationData) => {
+      const response = await adminApiClient.post('/variations', variationData);
       return response.data;
     },
   },

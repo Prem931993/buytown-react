@@ -49,6 +49,7 @@ function UserDetail() {
     status: 'active', // Status as string for frontend display
     role: 'user',
     vehicle_ids: [], // Array of selected vehicle IDs
+    vehicle_numbers: {}, // Object to store vehicle numbers for each assigned vehicle
   });
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [filePreviews, setFilePreviews] = useState({
@@ -110,6 +111,14 @@ function UserDetail() {
             }
           }
 
+          // Initialize vehicle_numbers object from user data
+          const vehicleNumbers = {};
+          if (userData.vehicles) {
+            userData.vehicles.forEach(vehicle => {
+              vehicleNumbers[vehicle.id] = vehicle.vehicle_number || '';
+            });
+          }
+
           setFormData({
             firstname: userData.firstname || '',
             lastname: userData.lastname || '',
@@ -123,6 +132,7 @@ function UserDetail() {
             role: userData.role_id ? roleIdToRole(userData.role_id) : 'user',
             status: userData.status ? statusSmallintToString(userData.status) : 'active',
             vehicle_ids: userData.vehicles ? userData.vehicles.map(v => v.id) : [],
+            vehicle_numbers: vehicleNumbers,
           });
         } catch (error) {
           setSnackbar({
@@ -360,6 +370,13 @@ function UserDetail() {
                 updateData[key].forEach(id => {
                   formDataToSend.append('vehicle_ids[]', id);
                 });
+              } else if (key === 'vehicle_numbers') {
+                // Handle vehicle numbers object
+                for (const vehicleId in updateData[key]) {
+                  if (updateData[key][vehicleId]) {
+                    formDataToSend.append(`vehicle_numbers[${vehicleId}]`, updateData[key][vehicleId]);
+                  }
+                }
               } else {
                 formDataToSend.append(key, updateData[key]);
               }
@@ -380,7 +397,16 @@ function UserDetail() {
             const formDataToSend = new FormData();
             for (const key in jsonData) {
               if (jsonData[key] !== null && jsonData[key] !== undefined && jsonData[key] !== '') {
-                formDataToSend.append(key, jsonData[key]);
+                if (key === 'vehicle_numbers') {
+                  // Handle vehicle numbers object
+                  for (const vehicleId in jsonData[key]) {
+                    if (jsonData[key][vehicleId]) {
+                      formDataToSend.append(`vehicle_numbers[${vehicleId}]`, jsonData[key][vehicleId]);
+                    }
+                  }
+                } else {
+                  formDataToSend.append(key, jsonData[key]);
+                }
               }
             }
             vehicleIds.forEach(id => {
@@ -410,6 +436,13 @@ function UserDetail() {
               formData[key].forEach(id => {
                 submitData.append('vehicle_ids[]', id);
               });
+            } else if (key === 'vehicle_numbers') {
+              // Handle vehicle numbers object
+              for (const vehicleId in formData[key]) {
+                if (formData[key][vehicleId]) {
+                  submitData.append(`vehicle_numbers[${vehicleId}]`, formData[key][vehicleId]);
+                }
+              }
             } else {
               submitData.append(key, formData[key]);
             }
@@ -865,20 +898,111 @@ function UserDetail() {
                           }
                           return selected.map(id => {
                             const vehicle = availableVehicles.find(v => v.id === id);
-                            return vehicle ? `${vehicle.vehicle_type} (₹${vehicle.rate_per_km}/km)` : `Vehicle ${id}`;
+                            return vehicle ? `${vehicle.vehicle_type}${vehicle.vehicle_number ? ` (${vehicle.vehicle_number})` : ''} - ₹${vehicle.rate_per_km}/km` : `Vehicle ${id}`;
                           }).join(', ');
                         }}
                       >
                         {availableVehicles.map((vehicle) => (
                           <MenuItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.vehicle_type} - ₹{vehicle.rate_per_km}/km
+                            <Box>
+                              <Typography variant="body2" fontWeight="medium">
+                                {vehicle.vehicle_type}
+                                {vehicle.vehicle_number && (
+                                  <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                    ({vehicle.vehicle_number})
+                                  </Typography>
+                                )}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                ₹{vehicle.rate_per_km}/km
+                              </Typography>
+                            </Box>
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                     <Typography variant="caption" color="text.secondary">
-                      Select vehicles that this delivery person can use for deliveries.
+                      Select vehicles that this delivery person can use for deliveries. Vehicle numbers are shown in parentheses.
                     </Typography>
+
+                    {/* Vehicle Number Fields for each assigned vehicle */}
+                    {formData.vehicle_ids.length > 0 && (
+                      <Box sx={{ mt: 3 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Vehicle Numbers:
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                          Enter or update vehicle numbers for each assigned vehicle.
+                        </Typography>
+                        <Grid container spacing={2}>
+                          {formData.vehicle_ids.map(id => {
+                            const vehicle = availableVehicles.find(v => v.id === id);
+                            return vehicle ? (
+                              <Grid item xs={12} md={6} key={id}>
+                                <TextField
+                                  fullWidth
+                                  label={`${vehicle.vehicle_type} Number`}
+                                  value={formData.vehicle_numbers[id] || ''}
+                                  onChange={(e) => {
+                                    const newVehicleNumbers = {
+                                      ...formData.vehicle_numbers,
+                                      [id]: e.target.value
+                                    };
+                                    setFormData({
+                                      ...formData,
+                                      vehicle_numbers: newVehicleNumbers
+                                    });
+                                  }}
+                                  placeholder="Enter vehicle number"
+                                  margin="normal"
+                                  helperText={`₹${vehicle.rate_per_km}/km`}
+                                />
+                              </Grid>
+                            ) : null;
+                          })}
+                        </Grid>
+                      </Box>
+                    )}
+
+                    {/* Display assigned vehicles with their numbers */}
+                    {formData.vehicle_ids.length > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Assigned Vehicles Details:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {formData.vehicle_ids.map(id => {
+                            const vehicle = availableVehicles.find(v => v.id === id);
+                            return vehicle ? (
+                              <Box
+                                key={id}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  p: 1,
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: 1,
+                                  backgroundColor: '#f9f9f9'
+                                }}
+                              >
+                                <Typography variant="body2" fontWeight="medium">
+                                  {vehicle.vehicle_type}
+                                </Typography>
+                                {(formData.vehicle_numbers[id] || vehicle.vehicle_number) && (
+                                  <Typography variant="body2" color="primary.main" fontWeight="medium">
+                                    ({formData.vehicle_numbers[id] || vehicle.vehicle_number})
+                                  </Typography>
+                                )}
+                                <Typography variant="caption" color="text.secondary">
+                                  ₹{vehicle.rate_per_km}/km
+                                </Typography>
+                              </Box>
+                            ) : null;
+                          })}
+                        </Box>
+                      </Box>
+                    )}
                   </Grid>
                 )}
               </Grid>
