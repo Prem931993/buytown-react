@@ -154,12 +154,6 @@ const menuItems = [
       { text: 'Banner Upload', path: '/general/banner-upload' }
     ]
   },
-  {
-    text: 'Invoices',
-    icon: <Receipt />,
-    path: '/invoices',
-    badge: null
-  },
 ];
 
 function Layout() {
