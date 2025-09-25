@@ -155,7 +155,6 @@ function ProductDetail() {
         if (isEditMode) {
           try {
             const productResponse = await adminService.products.getById(id);
-            console.log('Product response:', productResponse); // Debug log
 
             // Handle different possible response structures
             let productData = productResponse;
@@ -164,8 +163,6 @@ function ProductDetail() {
             } else if (productResponse?.product) {
               productData = productResponse.product;
             }
-
-            console.log('Product data:', productData); // Debug log
 
             if (!productData || typeof productData !== 'object') {
               throw new Error('Invalid product data received');
@@ -213,30 +210,6 @@ function ProductDetail() {
                 related_product_ids: productData.relatedProducts.map(rp => rp.id)
               }));
             }
-
-            console.log('Form data set:', {
-              name: productData.name || '',
-              description: productData.description || '',
-              sku_code: productData.sku_code || '',
-              hsn_code: productData.hsn_code || '',
-              category_id: productData.category_id || '',
-              subcategory_id: productData.subcategory_id || '',
-              brand_id: productData.brand_id || '',
-              color: productData.color || '',
-              size_dimension: productData.size_dimension || '',
-              weight_kg: productData.weight_kg ? productData.weight_kg.toString() : '',
-              selling_price: productData.selling_price ? productData.selling_price.toString() : '',
-              price: productData.price ? productData.price.toString() : '', // Original price field
-              discount: productData.discount ? productData.discount.toString() : '',
-              gst: productData.gst ? productData.gst.toString() : '',
-              stock: productData.stock ? productData.stock.toString() : '',
-              min_order_qty: productData.min_order_qty ? productData.min_order_qty.toString() : '1',
-              delivery_flag: productData.delivery_flag !== undefined ? productData.delivery_flag : true,
-              status: productData.status || 1,
-              product_type: productData.product_type || 'simple',
-              parent_product_id: productData.parent_product_id || '',
-              variation_id: productData.variation_id || '',
-            }); // Debug log
 
           } catch (error) {
             console.error('Error fetching product details:', error);

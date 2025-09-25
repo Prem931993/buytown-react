@@ -127,7 +127,6 @@ function OrderDetail() {
     try {
       setLoading(true);
       const response = await adminService.orders.getById(id);
-      console.log('Fetched order deliveryDistance:', response.order?.deliveryDistance);
       setOrderDetails(response.order || null);
     } catch (error) {
       console.error('Error fetching order details:', error);
