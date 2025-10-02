@@ -50,6 +50,12 @@ function OrderDetail() {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Calculated totals state
+  const [calculatedSubtotal, setCalculatedSubtotal] = useState(0);
+  const [calculatedTax, setCalculatedTax] = useState(0);
+  const [calculatedDiscount, setCalculatedDiscount] = useState(0);
+  const [calculatedTotal, setCalculatedTotal] = useState(0);
+
   // Delivery assignment state
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
@@ -122,6 +128,22 @@ function OrderDetail() {
     }
   }, [selectedVehicle, deliveryDistance, calculateDeliveryCharges]);
   
+  // Calculate subtotal, tax, discount, and total from orderDetails.items and other fields
+  useEffect(() => {
+    if (orderDetails && orderDetails.items) {
+      const subtotalCalc = orderDetails.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const taxCalc = orderDetails.items.reduce((acc, item) => acc + (item.tax_amount || 0), 0);
+      const discountCalc = orderDetails.discount || 0;
+      const deliveryChargesCalc = (orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges : calculatedDeliveryCharges;
+
+      const totalCalc = subtotalCalc + taxCalc + deliveryChargesCalc - discountCalc;
+
+      setCalculatedSubtotal(subtotalCalc);
+      setCalculatedTax(taxCalc);
+      setCalculatedDiscount(discountCalc);
+      setCalculatedTotal(totalCalc);
+    }
+  }, [orderDetails, calculatedDeliveryCharges]);
 
   const fetchOrderDetails = async () => {
     try {
@@ -748,7 +770,7 @@ function OrderDetail() {
                 </TableCell>
                 <TableCell align="right">
                   <Typography variant="body2" fontWeight={500}>
-                    ₹{orderDetails.subtotal?.toFixed(2) || '0.00'}
+                    ₹{calculatedSubtotal.toFixed(2)}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -768,7 +790,7 @@ function OrderDetail() {
                       <Typography variant="body2">Tax:</Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">₹{orderDetails.tax?.toFixed(2) || '0.00'}</Typography>
+                      <Typography variant="body2">₹{calculatedTax.toFixed(2)}</Typography>
                     </TableCell>
                   </TableRow>
                 )}
@@ -779,7 +801,7 @@ function OrderDetail() {
                       <Typography variant="body2">Discount:</Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ color: 'error.main' }}>
-                      -₹{orderDetails.discount?.toFixed(2) || '0.00'}
+                      -₹{calculatedDiscount.toFixed(2)}
                     </TableCell>
                   </TableRow>
                 )}
@@ -792,7 +814,7 @@ function OrderDetail() {
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="subtitle1" fontWeight={600}>
-                      ₹{(orderDetails.total + calculatedDeliveryCharges)?.toFixed(2) || '0.00'}
+                      ₹{calculatedTotal.toFixed(2)}
                     </Typography>
                   </TableCell>
                 </TableRow>
