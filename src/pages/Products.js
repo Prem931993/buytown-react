@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -24,15 +24,20 @@ import {
   Chip,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   CloudUpload as CloudUploadIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { adminApiClient } from '../services/adminService';
 import adminService from '../services/adminService';
@@ -41,21 +46,18 @@ function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
 
   // State for search and filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
-    category_id: '',
-    brand: '',
-    color: '',
-    min_price: '',
-    max_price: '',
+    category_ids: [],
     in_stock: false,
     has_discount: false
   });
@@ -65,6 +67,9 @@ function Products() {
     total: 0,
     totalPages: 0
   });
+
+  // Ref to track initial mount
+  const isInitialMount = useRef(true);
   
   const fetchProducts = useCallback(async (isSearch = false, pageOverride = null) => {
     try {
@@ -75,8 +80,7 @@ function Products() {
         page: pageOverride !== null ? pageOverride : pagination.page,
         limit: pagination.limit,
         search: searchQuery || undefined,
-        category_id: filters.category_id || undefined,
-        brand_id: filters.brand || undefined,
+        category_id: filters.category_ids.length > 0 ? filters.category_ids.join(',') : undefined,
       };
 
       // Remove undefined parameters
@@ -104,7 +108,7 @@ function Products() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, searchQuery, filters.category_id, filters.brand]);
+  }, [pagination.page, pagination.limit, searchQuery, filters.category_ids]);
   
   // Separate function for initial data fetching to avoid dependency issues
   const fetchInitialProducts = useCallback(async () => {
@@ -147,7 +151,7 @@ function Products() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch categories for dropdown
         try {
           const categoriesResponse = await adminService.categories.getForDropdown();
@@ -163,21 +167,6 @@ function Products() {
           ]);
         }
 
-        // Fetch brands for dropdown
-        try {
-          const brandsResponse = await adminService.brands.getForDropdown();
-          setBrands(brandsResponse.brands || []);
-        } catch (error) {
-          console.error('Error fetching brands:', error);
-          // Fallback to mock data if API fails
-          setBrands([
-            { id: 1, name: 'Apple' },
-            { id: 2, name: 'Samsung' },
-            { id: 3, name: 'Sony' },
-            { id: 4, name: 'Dell' }
-          ]);
-        }
-        
         // Fetch products with filters and pagination
         await fetchInitialProducts();
       } catch (error) {
@@ -191,9 +180,61 @@ function Products() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [fetchInitialProducts]);
+
+  // Auto-fetch products when category or status filters change
+  useEffect(() => {
+    // Skip the initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const applyFilters = async () => {
+      try {
+        setLoading(true);
+        setPagination(prev => ({ ...prev, page: 1 }));
+
+        // Prepare query parameters
+        const params = {
+          page: 1,
+          limit: pagination.limit,
+          search: searchQuery || undefined,
+          category_id: filters.category_ids.length > 0 ? filters.category_ids.join(',') : undefined,
+        };
+
+        // Remove undefined parameters
+        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+
+        // Fetch products from API
+        const response = await adminApiClient.get('/products', { params });
+
+        // Set products and pagination data
+        setProducts(response.data.products || []);
+        setPagination(prevPagination => ({
+          ...prevPagination,
+          page: 1,
+          total: response.data.pagination?.totalCount || 0,
+          totalPages: response.data.pagination?.totalPages || 0,
+          hasNext: response.data.pagination?.hasNext || false,
+          hasPrev: response.data.pagination?.hasPrev || false,
+        }));
+      } catch (error) {
+        console.error('Error fetching filtered products:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load filtered products',
+          severity: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    applyFilters();
+  }, [filters.category_ids, filters.in_stock, filters.has_discount, pagination.limit, searchQuery]);
 
   // Navigation to detail page is now handled with react-router
   const navigate = useNavigate();
@@ -212,19 +253,31 @@ function Products() {
   };
 
 
-  const handleDelete = async (id) => {
+  const handleDeleteConfirmation = (id, name) => {
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
       // Delete product from API
-      await adminApiClient.delete(`/products/${id}`);
-      
+      await adminApiClient.delete(`/products/${deleteItem.id}`);
+
       // Update the products list
-      const updatedProducts = products.filter((p) => p.id !== id);
+      const updatedProducts = products.filter((p) => p.id !== deleteItem.id);
       setProducts(updatedProducts);
       setSnackbar({
         open: true,
         message: 'Product deleted successfully',
         severity: 'success',
       });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     } catch (error) {
       console.error('Error deleting product:', error);
       setSnackbar({
@@ -232,8 +285,12 @@ function Products() {
         message: error.response?.data?.error || 'Failed to delete product',
         severity: 'error',
       });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     }
   };
+
+  // Add Delete Confirmation Dialog JSX here
 
   const handleCloseSnackbar = () => {
     setSnackbar({
@@ -281,11 +338,21 @@ function Products() {
         </Box>
       </Box>
 
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
+      <Card sx={{
+        mb: 4,
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        border: '1px solid #e2e8f0',
+        borderRadius: '16px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#374151' }}>
+            Search & Filters
+          </Typography>
+
+          <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} sm={6} md={4}>
-              <Box sx={{ display: 'flex' }}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <TextField
                   fullWidth
                   placeholder="Search products..."
@@ -293,7 +360,6 @@ function Products() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
-                      // Reset to first page when searching
                       setPagination({ ...pagination, page: 1 });
                       fetchProducts(true);
                     }
@@ -303,35 +369,75 @@ function Products() {
                   }}
                   variant="outlined"
                   size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      '&:hover': {
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#6366f1',
+                        },
+                      },
+                    },
+                  }}
                 />
                 <Button
                   variant="contained"
-                  sx={{
-                    ml: 1,
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
-                    },
-                  }}
                   onClick={() => {
-                    // Reset to first page when searching
                     setPagination({ ...pagination, page: 1 });
                     fetchProducts(true);
+                  }}
+                  sx={{
+                    minWidth: '48px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
                   }}
                 >
                   <SearchIcon />
                 </Button>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
+
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl
+                fullWidth
+                size="small"
+                sx={{
+                  minWidth: '160px',
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#6366f1',
+                      },
+                    },
+                  },
+                }}
+              >
                 <InputLabel>Category</InputLabel>
-                <Select 
-                  label="Category" 
-                  value={filters.category_id}
-                  onChange={(e) => setFilters({...filters, category_id: e.target.value})}
+                <Select
+                  label="Category"
+                  multiple
+                  value={filters.category_ids}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFilters({...filters, category_ids: typeof value === 'string' ? value.split(',') : value});
+                  }}
+                  renderValue={(selected) => {
+                    if (selected.length === 0) {
+                      return 'All Categories';
+                    }
+                    const selectedNames = categories.filter(cat => selected.includes(cat.id)).map(cat => cat.name);
+                    return selectedNames.join(', ');
+                  }}
                 >
-                  <MenuItem value="">All Categories</MenuItem>
                   {categories.map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       {category.name}
@@ -340,114 +446,39 @@ function Products() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select 
-                  label="Status" 
-                  value={filters.in_stock ? 'in_stock' : filters.has_discount ? 'has_discount' : ''}
-                  onChange={(e) => {
-                    if (e.target.value === 'in_stock') {
-                      setFilters({...filters, in_stock: true, has_discount: false});
-                    } else if (e.target.value === 'has_discount') {
-                      setFilters({...filters, in_stock: false, has_discount: true});
-                    } else {
-                      setFilters({...filters, in_stock: false, has_discount: false});
-                    }
-                  }}
-                >
-                  <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="in_stock">In Stock</MenuItem>
-                  <MenuItem value="has_discount">On Sale</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid item xs={12} sm={6} md={2}>
               <Button
-                fullWidth
                 variant="outlined"
-                startIcon={<FilterIcon />}
+                startIcon={<RefreshIcon />}
                 onClick={() => {
-                   // Reset to first page when applying new filters
-                   setPagination({ ...pagination, page: 1 });
-                   
-                   // For search functionality, we would use the searchProducts endpoint
-                   if (searchQuery) {
-                     fetchProducts(true); // true indicates this is a search operation
-                   } else {
-                     // Otherwise just apply filters to the product list
-                     fetchProducts(false);
-                   }
-                 }}
-                sx={{ height: '40px' }}
+                  setSearchQuery('');
+                  setFilters({
+                    category_ids: [],
+                    in_stock: false,
+                    has_discount: false
+                  });
+                  setPagination({ ...pagination, page: 1 });
+                  fetchProducts(false);
+                }}
+                sx={{
+                  minWidth: '120px',
+                  borderColor: '#ef4444',
+                  color: '#ef4444',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    borderColor: '#dc2626',
+                    backgroundColor: '#fef2f2',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
               >
-                Apply Filters
+                Reset
               </Button>
-            </Grid>
-          </Grid>
-          
-          {/* Advanced Filters */}
-          <Grid container spacing={2} alignItems="center" sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="Min Price"
-                type="number"
-                value={filters.min_price}
-                onChange={(e) => setFilters({...filters, min_price: e.target.value})}
-                InputProps={{
-                  startAdornment: <span style={{ marginRight: '8px' }}>₹</span>,
-                }}
-                variant="outlined"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="Max Price"
-                type="number"
-                value={filters.max_price}
-                onChange={(e) => setFilters({...filters, max_price: e.target.value})}
-                InputProps={{
-                  startAdornment: <span style={{ marginRight: '8px' }}>₹</span>,
-                }}
-                variant="outlined"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Brand</InputLabel>
-                <Select
-                  label="Brand"
-                  value={filters.brand}
-                  onChange={(e) => setFilters({...filters, brand: e.target.value})}
-                >
-                  <MenuItem value="">All Brands</MenuItem>
-                  {brands.map((brand) => (
-                    <MenuItem key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Color</InputLabel>
-                <Select 
-                  label="Color" 
-                  value={filters.color}
-                  onChange={(e) => setFilters({...filters, color: e.target.value})}
-                >
-                  <MenuItem value="">All Colors</MenuItem>
-                  <MenuItem value="Black">Black</MenuItem>
-                  <MenuItem value="White">White</MenuItem>
-                  <MenuItem value="Blue">Blue</MenuItem>
-                  <MenuItem value="Red">Red</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
           </Grid>
         </CardContent>
@@ -542,7 +573,7 @@ function Products() {
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDeleteConfirmation(product.id, product.name)}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -597,6 +628,30 @@ function Products() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete the product "{deleteItem.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

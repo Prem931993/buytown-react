@@ -19,7 +19,12 @@ import {
   Chip,
   Snackbar,
   Alert,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,6 +44,8 @@ function EmailConfig() {
     severity: 'success',
   });
   const [editingConfig, setEditingConfig] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
   const [formData, setFormData] = useState({
     config_type: 'smtp',
     smtp_host: '',
@@ -132,23 +139,35 @@ function EmailConfig() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this configuration?')) {
-      try {
-        await adminService.config.deleteEmailConfig(id);
-        fetchEmailConfigs();
-        setSnackbar({
-          open: true,
-          message: 'Email configuration deleted successfully',
-          severity: 'success',
-        });
-      } catch (err) {
-        setSnackbar({
-          open: true,
-          message: 'Failed to delete email configuration',
-          severity: 'error',
-        });
-      }
+  const handleDeleteConfirmation = (id, name) => {
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await adminService.config.deleteEmailConfig(deleteItem.id);
+      fetchEmailConfigs();
+      setSnackbar({
+        open: true,
+        message: 'Email configuration deleted successfully',
+        severity: 'success',
+      });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete email configuration',
+        severity: 'error',
+      });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     }
   };
 
@@ -538,7 +557,7 @@ function EmailConfig() {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleDelete(config.id)}
+                      onClick={() => handleDeleteConfirmation(config.id, config.from_email)}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -574,6 +593,30 @@ function EmailConfig() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete the email configuration for "{deleteItem.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -569,33 +569,63 @@ function UserDetail() {
             <CircularProgress />
           </Box>
         ) : (
-          <Card>
-            <CardContent>
+          <Card sx={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: 'text.primary' }}>
+                User Information
+              </Typography>
+
               <Grid container spacing={3}>
+                {/* Personal Information Section */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                    Personal Details
+                  </Typography>
+                </Grid>
+
                 {/* First Name and Last Name in single row */}
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="First Name"
                     name="firstname"
                     value={formData.firstname}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="Last Name"
                     name="lastname"
                     value={formData.lastname}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
 
-                {/* Email separate */}
+                {/* Contact Information Section */}
                 <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, mt: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                    Contact Information
+                  </Typography>
+                </Grid>
+
+                {/* Email and Phone in single row */}
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="Email Address"
@@ -603,24 +633,40 @@ function UserDetail() {
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
-
-                {/* Phone separate */}
-                <Grid item xs={12}>
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="Phone Number"
                     name="phone_no"
                     value={formData.phone_no}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
 
-                {/* Password */}
+                {/* Password Section */}
                 <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, mt: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                    Security
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label={isEditMode ? "New Password (leave blank to keep current)" : "Password"}
@@ -629,7 +675,13 @@ function UserDetail() {
                     value={formData.password}
                     onChange={handleInputChange}
                     required={!isEditMode}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -637,6 +689,7 @@ function UserDetail() {
                             aria-label="toggle password visibility"
                             onClick={togglePasswordVisibility}
                             edge="end"
+                            size="small"
                           >
                             {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                           </IconButton>
@@ -646,35 +699,67 @@ function UserDetail() {
                   />
                 </Grid>
 
-                {/* Address separate */}
+                {/* Address Section */}
                 <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, mt: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                    Address & Business Details
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="Address"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
                     multiline
                     rows={3}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
-
-                {/* GSTIN separate */}
-                <Grid item xs={12}>
+                <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
                     fullWidth
                     label="GSTIN Number"
                     name="gstin"
                     value={formData.gstin}
                     onChange={handleInputChange}
-                    margin="normal"
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
                   />
                 </Grid>
 
+                {/* Account Settings Section */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, mt: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                    Account Settings
+                  </Typography>
+                </Grid>
+
                 {/* Role and Status in single row */}
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth margin="normal">
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FormControl
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
+                  >
                     <InputLabel>Role</InputLabel>
                     <Select
                       label="Role"
@@ -684,14 +769,23 @@ function UserDetail() {
                     >
                       {roles.map((role) => (
                         <MenuItem key={role.id} value={role.name}>
-                          {role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' ')}
+                          {(role.name === 'user' ? 'Customer' : role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' '))}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth margin="normal">
+                <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FormControl
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        minHeight: 56,
+                      }
+                    }}
+                  >
                     <InputLabel>Status</InputLabel>
                     <Select
                       label="Status"
@@ -875,135 +969,166 @@ function UserDetail() {
                   </Grid>
                 )}
 
-                {/* Vehicle Selection - Only for delivery_person role - Full width */}
+                {/* Vehicle Assignment Section - Only for delivery_person role */}
                 {formData.role === 'delivery_person' && (
-                  <Grid item xs={12}>
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel>Assigned Vehicles</InputLabel>
-                      <Select
-                        label="Assigned Vehicles"
-                        name="vehicle_ids"
-                        multiple
-                        value={formData.vehicle_ids}
-                        onChange={(e) => {
-                          const { value } = e.target;
-                          setFormData({
-                            ...formData,
-                            vehicle_ids: typeof value === 'string' ? value.split(',') : value,
-                          });
-                        }}
-                        renderValue={(selected) => {
-                          if (selected.length === 0) {
-                            return 'No vehicles assigned';
+                  <>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, mt: 2, fontWeight: 600, color: 'text.secondary', borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
+                        Vehicle Assignment
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <FormControl
+                        fullWidth
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
                           }
-                          return selected.map(id => {
-                            const vehicle = availableVehicles.find(v => v.id === id);
-                            return vehicle ? `${vehicle.vehicle_type}${vehicle.vehicle_number ? ` (${vehicle.vehicle_number})` : ''} - ₹${vehicle.rate_per_km}/km` : `Vehicle ${id}`;
-                          }).join(', ');
                         }}
                       >
-                        {availableVehicles.map((vehicle) => (
-                          <MenuItem key={vehicle.id} value={vehicle.id}>
-                            <Box>
-                              <Typography variant="body2" fontWeight="medium">
-                                {vehicle.vehicle_type}
-                                {vehicle.vehicle_number && (
-                                  <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                                    ({vehicle.vehicle_number})
-                                  </Typography>
-                                )}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                ₹{vehicle.rate_per_km}/km
-                              </Typography>
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <Typography variant="caption" color="text.secondary">
-                      Select vehicles that this delivery person can use for deliveries. Vehicle numbers are shown in parentheses.
-                    </Typography>
-
-                    {/* Vehicle Number Fields for each assigned vehicle */}
-                    {formData.vehicle_ids.length > 0 && (
-                      <Box sx={{ mt: 3 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Vehicle Numbers:
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                          Enter or update vehicle numbers for each assigned vehicle.
-                        </Typography>
-                        <Grid container spacing={2}>
-                          {formData.vehicle_ids.map(id => {
-                            const vehicle = availableVehicles.find(v => v.id === id);
-                            return vehicle ? (
-                              <Grid item xs={12} md={6} key={id}>
-                                <TextField
-                                  fullWidth
-                                  label={`${vehicle.vehicle_type} Number`}
-                                  value={formData.vehicle_numbers[id] || ''}
-                                  onChange={(e) => {
-                                    const newVehicleNumbers = {
-                                      ...formData.vehicle_numbers,
-                                      [id]: e.target.value
-                                    };
-                                    setFormData({
-                                      ...formData,
-                                      vehicle_numbers: newVehicleNumbers
-                                    });
-                                  }}
-                                  placeholder="Enter vehicle number"
-                                  margin="normal"
-                                  helperText={`₹${vehicle.rate_per_km}/km`}
-                                />
-                              </Grid>
-                            ) : null;
-                          })}
-                        </Grid>
-                      </Box>
-                    )}
-
-                    {/* Display assigned vehicles with their numbers */}
-                    {formData.vehicle_ids.length > 0 && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Assigned Vehicles Details:
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {formData.vehicle_ids.map(id => {
-                            const vehicle = availableVehicles.find(v => v.id === id);
-                            return vehicle ? (
-                              <Box
-                                key={id}
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1,
-                                  p: 1,
-                                  border: '1px solid #e0e0e0',
-                                  borderRadius: 1,
-                                  backgroundColor: '#f9f9f9'
-                                }}
-                              >
+                        <InputLabel>Assigned Vehicles</InputLabel>
+                        <Select
+                          label="Assigned Vehicles"
+                          name="vehicle_ids"
+                          multiple
+                          value={formData.vehicle_ids}
+                          onChange={(e) => {
+                            const { value } = e.target;
+                            setFormData({
+                              ...formData,
+                              vehicle_ids: typeof value === 'string' ? value.split(',') : value,
+                            });
+                          }}
+                          renderValue={(selected) => {
+                            if (selected.length === 0) {
+                              return 'No vehicles assigned';
+                            }
+                            return selected.map(id => {
+                              const vehicle = availableVehicles.find(v => v.id === id);
+                              return vehicle ? `${vehicle.vehicle_type}${vehicle.vehicle_number ? ` (${vehicle.vehicle_number})` : ''} - ₹${vehicle.rate_per_km}/km` : `Vehicle ${id}`;
+                            }).join(', ');
+                          }}
+                        >
+                          {availableVehicles.map((vehicle) => (
+                            <MenuItem key={vehicle.id} value={vehicle.id}>
+                              <Box>
                                 <Typography variant="body2" fontWeight="medium">
                                   {vehicle.vehicle_type}
+                                  {vehicle.vehicle_number && (
+                                    <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                      ({vehicle.vehicle_number})
+                                    </Typography>
+                                  )}
                                 </Typography>
-                                {(formData.vehicle_numbers[id] || vehicle.vehicle_number) && (
-                                  <Typography variant="body2" color="primary.main" fontWeight="medium">
-                                    ({formData.vehicle_numbers[id] || vehicle.vehicle_number})
-                                  </Typography>
-                                )}
                                 <Typography variant="caption" color="text.secondary">
                                   ₹{vehicle.rate_per_km}/km
                                 </Typography>
                               </Box>
-                            ) : null;
-                          })}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        Select vehicles that this delivery person can use for deliveries. Vehicle numbers are shown in parentheses.
+                      </Typography>
+                    </Grid>
+
+                    {/* Vehicle Number Fields for each assigned vehicle */}
+                    {formData.vehicle_ids.length > 0 && (
+                      <Grid item xs={12}>
+                        <Box sx={{ mt: 3 }}>
+                          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                            Vehicle Numbers:
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                            Enter or update vehicle numbers for each assigned vehicle.
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {formData.vehicle_ids.map(id => {
+                              const vehicle = availableVehicles.find(v => v.id === id);
+                              return vehicle ? (
+                                <Grid item xs={12} md={6} key={id} sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <TextField
+                                    fullWidth
+                                    label={`${vehicle.vehicle_type} Number`}
+                                    value={formData.vehicle_numbers[id] || ''}
+                                    onChange={(e) => {
+                                      const newVehicleNumbers = {
+                                        ...formData.vehicle_numbers,
+                                        [id]: e.target.value
+                                      };
+                                      setFormData({
+                                        ...formData,
+                                        vehicle_numbers: newVehicleNumbers
+                                      });
+                                    }}
+                                    placeholder="Enter vehicle number"
+                                    variant="outlined"
+                                    sx={{
+                                      '& .MuiOutlinedInput-root': {
+                                        borderRadius: 2,
+                                        minHeight: 56,
+                                      }
+                                    }}
+                                    helperText={`₹${vehicle.rate_per_km}/km`}
+                                  />
+                                </Grid>
+                              ) : null;
+                            })}
+                          </Grid>
                         </Box>
-                      </Box>
+                      </Grid>
                     )}
-                  </Grid>
+
+                    {/* Display assigned vehicles with their numbers */}
+                    {formData.vehicle_ids.length > 0 && (
+                      <Grid item xs={12}>
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                            Assigned Vehicles Details:
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {formData.vehicle_ids.map(id => {
+                              const vehicle = availableVehicles.find(v => v.id === id);
+                              return vehicle ? (
+                                <Box
+                                  key={id}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    p: 1.5,
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: 2,
+                                    backgroundColor: '#f9f9f9',
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      backgroundColor: '#f5f5f5',
+                                      borderColor: 'primary.light',
+                                    }
+                                  }}
+                                >
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {vehicle.vehicle_type}
+                                  </Typography>
+                                  {(formData.vehicle_numbers[id] || vehicle.vehicle_number) && (
+                                    <Typography variant="body2" color="primary.main" fontWeight="medium">
+                                      ({formData.vehicle_numbers[id] || vehicle.vehicle_number})
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" color="text.secondary">
+                                    ₹{vehicle.rate_per_km}/km
+                                  </Typography>
+                                </Box>
+                              ) : null;
+                            })}
+                          </Box>
+                        </Box>
+                      </Grid>
+                    )}
+                  </>
                 )}
               </Grid>
             </CardContent>

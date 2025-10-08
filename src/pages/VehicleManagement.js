@@ -50,6 +50,8 @@ function VehicleManagement() {
     message: '',
     severity: 'success',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
 
   // Function to get icon based on vehicle type
   const getVehicleIcon = (type) => {
@@ -124,26 +126,41 @@ function VehicleManagement() {
     }
   };
 
-  // Handle delete
-  const handleDelete = async (vehicleId) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
-      try {
-        await adminService.vehicles.delete(vehicleId);
-        setSnackbar({
-          open: true,
-          message: 'Vehicle deleted successfully',
-          severity: 'success',
-        });
-        fetchVehicles();
-      } catch (error) {
-        console.error('Error deleting vehicle:', error);
-        setSnackbar({
-          open: true,
-          message: 'Failed to delete vehicle',
-          severity: 'error',
-        });
-      }
+  // Handle delete confirmation
+  const handleDeleteConfirmation = (vehicleId) => {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    const name = vehicle ? vehicle.vehicle_type : 'this vehicle';
+    setDeleteItem({ id: vehicleId, name });
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
+    const { id } = deleteItem;
+    try {
+      await adminService.vehicles.delete(id);
+      setSnackbar({
+        open: true,
+        message: 'Vehicle deleted successfully',
+        severity: 'success',
+      });
+      fetchVehicles();
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete vehicle',
+        severity: 'error',
+      });
     }
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
   };
 
   // Open dialog for editing
@@ -289,7 +306,7 @@ function VehicleManagement() {
                         color="error"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(vehicle.id);
+                          handleDeleteConfirmation(vehicle.id);
                         }}
                       >
                         <DeleteIcon />
@@ -382,6 +399,29 @@ function VehicleManagement() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the vehicle "{deleteItem.name}"? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Floating Action Button */}
       <Fab

@@ -18,6 +18,11 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -39,6 +44,8 @@ function DeliverySettings() {
     message: '',
     severity: 'success',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ index: null, name: '' });
 
   // Fetch delivery settings
   const fetchSettings = async () => {
@@ -86,8 +93,23 @@ function DeliverySettings() {
     }]);
   };
 
-  // Handle delete setting
-  const handleDelete = async (index) => {
+  // Handle delete confirmation
+  const handleDeleteConfirmation = (index) => {
+    const setting = settings[index];
+    const name = setting.center_point || `Zone ${index + 1}`;
+    setDeleteItem({ index, name });
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ index: null, name: '' });
+  };
+
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
+    const { index } = deleteItem;
     const setting = settings[index];
     if (setting.id) {
       // Existing setting, delete from API
@@ -111,6 +133,8 @@ function DeliverySettings() {
       // New setting, just remove from array
       setSettings(prev => prev.filter((_, i) => i !== index));
     }
+    setDeleteDialogOpen(false);
+    setDeleteItem({ index: null, name: '' });
   };
 
   // Validate single setting
@@ -343,7 +367,7 @@ function DeliverySettings() {
                             </Box>
                             <Box sx={{ width: 1, height: 24, borderLeft: 1, borderColor: 'divider', mx: 0.5 }} />
                             <IconButton
-                              onClick={() => handleDelete(index)}
+                              onClick={() => handleDeleteConfirmation(index)}
                               color="error"
                               size="small"
                               sx={{
@@ -502,6 +526,31 @@ function DeliverySettings() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete the delivery zone "{deleteItem.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

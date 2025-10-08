@@ -27,7 +27,11 @@ import {
   Select,
   MenuItem,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -50,6 +54,8 @@ function Pages() {
     message: '',
     severity: 'success',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
 
   const navigate = useNavigate();
 
@@ -82,26 +88,42 @@ function Pages() {
     navigate(`/pages/edit/${page.id}`);
   };
 
-  const handleDeletePage = async (pageId) => {
-    if (window.confirm('Are you sure you want to delete this page?')) {
-      try {
-        await adminService.pages.delete(pageId);
-        const updatedPages = pages.filter((page) => page.id !== pageId);
-        setPages(updatedPages);
-        setSnackbar({
-          open: true,
-          message: 'Page deleted successfully',
-          severity: 'success',
-        });
-      } catch (error) {
-        console.error('Error deleting page:', error);
-        setSnackbar({
-          open: true,
-          message: error.response?.data?.error || 'Failed to delete page',
-          severity: 'error',
-        });
-      }
+  // Handle delete confirmation
+  const handleDeleteConfirmation = (id) => {
+    const page = pages.find(p => p.id === id);
+    const name = page ? page.title || 'this page' : 'this page';
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
+    const { id } = deleteItem;
+    try {
+      await adminService.pages.delete(id);
+      const updatedPages = pages.filter((page) => page.id !== id);
+      setPages(updatedPages);
+      setSnackbar({
+        open: true,
+        message: 'Page deleted successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete page',
+        severity: 'error',
+      });
     }
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
   };
 
   const handleCloseSnackbar = () => {
@@ -307,7 +329,7 @@ function Pages() {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleDeletePage(page.id)}
+                      onClick={() => handleDeleteConfirmation(page.id)}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -343,6 +365,30 @@ function Pages() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            Are you sure you want to delete the page "{deleteItem.name}"? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

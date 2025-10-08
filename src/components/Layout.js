@@ -45,6 +45,10 @@ import {
   Description,
   DirectionsCar,
   Route,
+  Store,
+  Article,
+  Image,
+  Calculate,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -57,7 +61,7 @@ const menuItems = [
   },
   {
     text: 'Products',
-    icon: <Inventory />,
+    icon: <Store />,
     path: null,
     badge: null,
     children: [
@@ -73,7 +77,7 @@ const menuItems = [
     path: null,
     badge: null,
     children: [
-      { text: 'All Orders', path: '/orders', icon: <ShoppingCart /> },
+      { text: 'All Orders', path: '/orders', icon: <Receipt /> },
       { text: 'Ordered Customers', path: '/orders/customers', icon: <People /> }
     ]
   },
@@ -91,12 +95,12 @@ const menuItems = [
   },
   {
     text: 'Content',
-    icon: <Description />,
+    icon: <Article />,
     path: null,
     badge: null,
     children: [
       { text: 'Pages', path: '/pages', icon: <Description /> },
-      { text: 'Banner Upload', path: '/general/banner-upload', icon: <Settings /> }
+      { text: 'Banner Upload', path: '/general/banner-upload', icon: <Image /> }
     ]
   },
   {
@@ -105,11 +109,11 @@ const menuItems = [
     path: null,
     badge: null,
     children: [
-      { text: 'General', path: '/general/settings', icon: <Settings /> },
+      { text: 'General', path: '/general/settings', icon: <Tune /> },
       { text: 'Vehicle Management', path: '/vehicles', icon: <DirectionsCar /> },
       { text: 'Delivery', path: '/delivery', icon: <Route /> },
       { text: 'Payment Gateway', path: '/payment', icon: <Payment /> },
-      { text: 'Tax Management', path: '/tax', icon: <Receipt /> },
+      { text: 'Tax Management', path: '/tax', icon: <Calculate /> },
       { text: 'SMS Configuration', path: '/sms', icon: <Sms /> },
       { text: 'Email Configuration', path: '/email', icon: <Email /> }
     ]
@@ -371,15 +375,13 @@ function Layout() {
                                 },
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 30 }}>
-                                {child.icon}
-                              </ListItemIcon>
                               <ListItemText
                                 primary={child.text}
                                 primaryTypographyProps={{
                                   fontSize: '0.875rem',
                                   fontWeight: isChildActive ? 600 : 400,
                                 }}
+                                sx={{ ml: 2 }}
                               />
                               {hasSubChildren && (
                                 <IconButton

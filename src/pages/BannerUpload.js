@@ -70,6 +70,8 @@ const BannerUpload = () => {
   const [products, setProducts] = useState([]);
   const [categorySearch, setCategorySearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
   
   // Create a SortableItem component
   const SortableItem = ({ banner }) => {
@@ -196,15 +198,15 @@ const BannerUpload = () => {
             >
               <EditIcon />
             </IconButton>
-            <IconButton 
-              edge="end" 
+            <IconButton
+              edge="end"
               aria-label="delete"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteBanner(banner.id);
+                handleDeleteConfirmation(banner.id, banner.name);
               }}
               disabled={loading}
-              sx={{ 
+              sx={{
                 bgcolor: 'error.light',
                 color: 'error.contrastText',
                 '&:hover': {
@@ -516,14 +518,28 @@ const BannerUpload = () => {
     }
   };
 
-  const handleDeleteBanner = async (id) => {
+  const handleDeleteConfirmation = (id, name) => {
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
       setLoading(true);
-      await adminService.banners.delete(id);
+      await adminService.banners.delete(deleteItem.id);
       showSnackbar('Banner deleted successfully!', 'success');
       fetchBanners();
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     } catch (error) {
       showSnackbar('Failed to delete banner: ' + error.message, 'error');
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     } finally {
       setLoading(false);
     }
@@ -872,8 +888,44 @@ const BannerUpload = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
-      <Snackbar 
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete the banner "{deleteItem.name}"? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Button onClick={handleDeleteCancel} sx={{ mr: 1 }} type="button">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+            disabled={loading}
+            sx={{
+              bgcolor: 'error.main',
+              '&:hover': { bgcolor: 'error.dark' },
+              px: 3
+            }}
+            type="button"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
         open={snackbar.open} 
         autoHideDuration={6000} 
         onClose={handleSnackbarClose}

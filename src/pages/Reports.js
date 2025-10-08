@@ -551,37 +551,54 @@ function Reports() {
               ) : (
                 getCurrentData()
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => (
-                    <TableRow key={row.id || index} hover>
-                      <TableCell component="th" scope="row">
-                        {tabValue === 0 ? row.name : tabValue === 1 ? row.name : row.region}
-                      </TableCell>
-                      <TableCell align="right">
-                        {tabValue === 2 ? formatNumber(row.sales) : formatNumber(row.sales)}
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(tabValue === 2 ? row.revenue : row.revenue)}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                          {row.growth >= 0 ? (
-                            <TrendingUp sx={{ color: 'success.main', fontSize: 16, mr: 0.5 }} />
-                          ) : (
-                            <TrendingDown sx={{ color: 'error.main', fontSize: 16, mr: 0.5 }} />
-                          )}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: row.growth >= 0 ? 'success.main' : 'error.main',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {row.growth >= 0 ? '+' : ''}{row.growth}%
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  .map((row, index) => {
+                    // Parse region from JSON if it's a string
+                    let displayRegion = row.region;
+                    if (tabValue === 2 && typeof row.region === 'string') {
+                      try {
+                        const regionData = JSON.parse(row.region);
+                        const city = regionData.city || '';
+                        const state = regionData.state || '';
+                        const zipCode = regionData.zip_code || '';
+                        displayRegion = `${city}${city && state ? ', ' : ''}${state}${zipCode ? ` - ${zipCode}` : ''}`.trim() || row.region;
+                      } catch (e) {
+                        // If parsing fails, use the region as is
+                        displayRegion = row.region;
+                      }
+                    }
+
+                    return (
+                      <TableRow key={row.id || index} hover>
+                        <TableCell component="th" scope="row">
+                          {tabValue === 0 ? row.name : tabValue === 1 ? row.name : displayRegion}
+                        </TableCell>
+                        <TableCell align="right">
+                          {tabValue === 2 ? formatNumber(row.sales) : formatNumber(row.sales)}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(tabValue === 2 ? row.revenue : row.revenue)}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                            {row.growth >= 0 ? (
+                              <TrendingUp sx={{ color: 'success.main', fontSize: 16, mr: 0.5 }} />
+                            ) : (
+                              <TrendingDown sx={{ color: 'error.main', fontSize: 16, mr: 0.5 }} />
+                            )}
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: row.growth >= 0 ? 'success.main' : 'error.main',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {row.growth >= 0 ? '+' : ''}{row.growth}%
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
               )}
             </TableBody>
           </Table>
@@ -604,7 +621,7 @@ function Reports() {
             <Typography variant="h6" sx={{ mb: 2 }}>
               Payment Methods
             </Typography>
-            <Box sx={{ height: 250 }}>
+            <Box sx={{ width: 400, height: 250, margin: '0 auto' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -632,7 +649,7 @@ function Reports() {
             <Typography variant="h6" sx={{ mb: 2 }}>
               Order Status Distribution
             </Typography>
-            <Box sx={{ height: 250 }}>
+            <Box sx={{ width: 400, height: 250, margin: '0 auto' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={getOrderStatusData()}>
                   <CartesianGrid strokeDasharray="3 3" />

@@ -16,8 +16,7 @@ import {
   Grid,
   Card,
   CardContent,
-  Tabs,
-  Tab,
+
   CircularProgress,
   Select,
   MenuItem,
@@ -47,7 +46,7 @@ function OrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+
   const [loading, setLoading] = useState(true);
 
   // Calculated totals state
@@ -158,9 +157,7 @@ function OrderDetail() {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -547,17 +544,9 @@ function OrderDetail() {
             </Button>
           )}
         </Box>
-
-      <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
-        <Tab label="Order Info" />
-        <Tab label="Timeline" />
-      </Tabs>
-
-      {tabValue === 0 && (
-        <>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ mb: 3 }}>
+              <Card variant="outlined" sx={{ mb: 3, minWidth: 250 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Customer Information
@@ -575,7 +564,7 @@ function OrderDetail() {
               </Card>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ mb: 3 }}>
+              <Card variant="outlined" sx={{ mb: 3, minWidth: 350 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Order Summary
@@ -620,7 +609,7 @@ function OrderDetail() {
               </Card>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ mb: 3 }}>
+              <Card variant="outlined" sx={{ mb: 3, minWidth: 250 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Shipping Address
@@ -653,7 +642,7 @@ function OrderDetail() {
               </Card>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ mb: 3 }}>
+              <Card variant="outlined" sx={{ mb: 3, minWidth: 200 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Billing Address
@@ -689,7 +678,7 @@ function OrderDetail() {
                 )}
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={12}>
-                    <FormControl fullWidth>
+                    <FormControl sx={{ minWidth: 250 }}>
                       <InputLabel>Select Vehicle</InputLabel>
                       <Select
                         value={selectedVehicle}
@@ -708,7 +697,7 @@ function OrderDetail() {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} md={12}>
-                    <FormControl fullWidth>
+                    <FormControl sx={{ minWidth: 250 }}>
                       <InputLabel>Select Delivery Person</InputLabel>
                       <Select
                         value={selectedDeliveryPerson}
@@ -820,53 +809,7 @@ function OrderDetail() {
                 </TableRow>
               </TableBody>
             </Table>
-          </TableContainer>
-        </>
-      )}
-
-      {tabValue === 1 && (
-        <Box sx={{ p: 2 }}>
-          {(orderDetails.timeline || []).map((event, index) => (
-            <Box key={index} sx={{ display: 'flex', mb: 3 }}>
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.main',
-                  mt: 0.5,
-                  position: 'relative',
-                  '&::after':
-                    index !== (orderDetails.timeline || []).length - 1
-                      ? {
-                          content: '""',
-                          position: 'absolute',
-                          top: 16,
-                          left: 7,
-                          width: 2,
-                          height: 'calc(100% + 8px)',
-                          bgcolor: 'divider',
-                        }
-                      : {},
-                }}
-              />
-              <Box sx={{ ml: 2, flex: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {event.status}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {event.date}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {event.note}
-                </Typography>
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      )}
+        </TableContainer>
 
       {/* Reject Reason Dialog */}
       <Dialog open={rejectDialogOpen} onClose={handleRejectDialogClose} maxWidth="sm" fullWidth>

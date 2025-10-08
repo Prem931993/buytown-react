@@ -26,7 +26,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -51,6 +56,8 @@ function Users() {
     severity: 'success',
   });
   const [roles, setRoles] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -157,29 +164,40 @@ function Users() {
 
   // Form submission is now handled in UserDetail page
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        // Call backend API to delete user
-        await adminApiClient.delete(`/users/${userId}`);
+  const handleDeleteConfirmation = (id, name) => {
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
 
-        // Update local state after successful deletion
-        const updatedUsers = users.filter((user) => user.id !== userId);
-        setUsers(updatedUsers);
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
 
-        setSnackbar({
-          open: true,
-          message: 'User deleted successfully',
-          severity: 'success',
-        });
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        setSnackbar({
-          open: true,
-          message: error.response?.data?.error || 'Failed to delete user',
-          severity: 'error',
-        });
-      }
+  const handleDeleteConfirm = async () => {
+    try {
+      // Delete user from API
+      await adminApiClient.delete(`/users/${deleteItem.id}`);
+
+      // Update the users list
+      const updatedUsers = users.filter((user) => user.id !== deleteItem.id);
+      setUsers(updatedUsers);
+      setSnackbar({
+        open: true,
+        message: 'User deleted successfully',
+        severity: 'success',
+      });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete user',
+        severity: 'error',
+      });
+      setDeleteDialogOpen(false);
+      setDeleteItem({ id: null, name: '' });
     }
   };
 
@@ -207,9 +225,11 @@ function Users() {
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const fullName = `${user.firstname || ''} ${user.lastname || ''}`.toLowerCase().trim();
       return (
         user.firstname?.toLowerCase().includes(query) ||
         user.lastname?.toLowerCase().includes(query) ||
+        fullName.includes(query) ||
         user.email?.toLowerCase().includes(query) ||
         user.phone_no?.includes(query)
       );
@@ -221,8 +241,8 @@ function Users() {
   const getRoleChip = (role) => {
     const roleData = roles.find(r => r.name === role);
     const displayName = roleData
-      ? roleData.name.charAt(0).toUpperCase() + roleData.name.slice(1).replace('_', ' ')
-      : role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+      ? (roleData.name === 'user' ? 'Customer' : roleData.name.charAt(0).toUpperCase() + roleData.name.slice(1).replace('_', ' '))
+      : (role === 'user' ? 'Customer' : role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' '));
 
     // Define role-specific icons and colors
     const getRoleIcon = (roleName) => {
@@ -380,7 +400,7 @@ function Users() {
                   <MenuItem value="all">All Roles</MenuItem>
                   {roles.map((role) => (
                     <MenuItem key={role.id} value={role.name}>
-                      {role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' ')}
+                      {(role.name === 'user' ? 'Customer' : role.name.charAt(0).toUpperCase() + role.name.slice(1).replace('_', ' '))}
                     </MenuItem>
                   ))}
                 </Select>
@@ -468,7 +488,7 @@ function Users() {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleDeleteUser(user.id)}
+                      onClick={() => handleDeleteConfirmation(user.id, `${user.firstname || ''} ${user.lastname || ''}`.trim())}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -506,6 +526,30 @@ function Users() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete the user "{deleteItem.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

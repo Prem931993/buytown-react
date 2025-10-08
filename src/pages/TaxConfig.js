@@ -19,7 +19,11 @@ import {
   Chip,
   Snackbar,
   Alert,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,6 +41,8 @@ function TaxConfig() {
     message: '',
     severity: 'success',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
   const [formData, setFormData] = useState({
     tax_name: '',
     tax_rate: '',
@@ -98,24 +104,40 @@ function TaxConfig() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this configuration?')) {
-      try {
-        await adminService.config.deleteTaxConfig(id);
-        fetchTaxConfigs();
-        setSnackbar({
-          open: true,
-          message: 'Tax configuration deleted successfully',
-          severity: 'success',
-        });
-      } catch (err) {
-        setSnackbar({
-          open: true,
-          message: 'Failed to delete tax configuration',
-          severity: 'error',
-        });
-      }
+  // Handle delete confirmation
+  const handleDeleteConfirmation = (id) => {
+    const config = taxConfigs.find(c => c.id === id);
+    const name = config ? config.tax_name : 'this configuration';
+    setDeleteItem({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
+  };
+
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
+    const { id } = deleteItem;
+    try {
+      await adminService.config.deleteTaxConfig(id);
+      fetchTaxConfigs();
+      setSnackbar({
+        open: true,
+        message: 'Tax configuration deleted successfully',
+        severity: 'success',
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete tax configuration',
+        severity: 'error',
+      });
     }
+    setDeleteDialogOpen(false);
+    setDeleteItem({ id: null, name: '' });
   };
 
   const handleSearchChange = (event) => {
@@ -329,7 +351,7 @@ function TaxConfig() {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleDelete(config.id)}
+                      onClick={() => handleDeleteConfirmation(config.id)}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -349,6 +371,29 @@ function TaxConfig() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the tax configuration "{deleteItem.name}"? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}
