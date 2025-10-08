@@ -18,7 +18,6 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Switch,
-  FormControlLabel,
 } from '@mui/material';
 import {
   Save as SaveIcon,
