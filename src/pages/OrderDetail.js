@@ -774,6 +774,17 @@ function OrderDetail() {
                   </Typography>
                 </TableCell>
               </TableRow>
+              {orderDetails.tax > 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} />
+                  <TableCell align="right">
+                    <Typography variant="body2">Tax:</Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2">₹{calculatedTax.toFixed(2)}</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
                 <TableRow>
                   <TableCell colSpan={6} />
                   <TableCell align="right">
@@ -783,17 +794,6 @@ function OrderDetail() {
                     <Typography variant="body2">₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges?.toFixed(2) || '0.00' : calculatedDeliveryCharges.toFixed(2)}</Typography>
                   </TableCell>
                 </TableRow>
-                {orderDetails.tax > 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} />
-                    <TableCell align="right">
-                      <Typography variant="body2">Tax:</Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2">₹{calculatedTax.toFixed(2)}</Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
                 {orderDetails.discount > 0 && (
                   <TableRow>
                     <TableCell colSpan={6} />

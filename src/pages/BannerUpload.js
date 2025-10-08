@@ -26,6 +26,7 @@ import {
   Tabs,
   Tab,
   AppBar,
+  Autocomplete,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -61,10 +62,14 @@ const BannerUpload = () => {
     type: 'image',
     file: null,
     url: '',
-    linkUrl: '',
-    linkTarget: '_self'
+    linktype: '',
+    linkid: ''
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
   
   // Create a SortableItem component
   const SortableItem = ({ banner }) => {
@@ -239,9 +244,49 @@ const BannerUpload = () => {
     }
   }, []);
 
+  const fetchCategories = useCallback(async (search = '', limit = null) => {
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (limit !== null) params.limit = limit;
+      const data = await adminService.categories.getAll(params);
+      setCategories(data.categories || []);
+    } catch (error) {
+      showSnackbar('Failed to fetch categories: ' + error.message, 'error');
+    }
+  }, []);
+
+  const fetchProducts = useCallback(async (search = '', limit = 50) => {
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (limit !== null) params.limit = limit;
+      const data = await adminService.products.getAll(params);
+      setProducts(data.products || []);
+    } catch (error) {
+      showSnackbar('Failed to fetch products: ' + error.message, 'error');
+    }
+  }, []);
+
   useEffect(() => {
     fetchBanners();
-  }, [fetchBanners]);
+    fetchCategories();
+    fetchProducts();
+  }, [fetchBanners, fetchCategories, fetchProducts]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCategories(categorySearch);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [categorySearch, fetchCategories]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProducts(productSearch);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [productSearch, fetchProducts]);
 
   const handleOpenDialog = (banner = null) => {
     if (banner) {
@@ -251,8 +296,8 @@ const BannerUpload = () => {
         type: banner.media_type || 'image',
         file: null,
         url: banner.media_type === 'youtube' ? banner.file_path : '',
-        linkUrl: banner.link_url || '',
-        linkTarget: banner.link_target || '_self'
+        linktype: banner.link_type || '',
+        linkid: banner.link_id || ''
       });
       setIsEditing(true);
     } else {
@@ -262,8 +307,8 @@ const BannerUpload = () => {
         type: 'image',
         file: null,
         url: '',
-        linkUrl: '',
-        linkTarget: '_self'
+        linktype: '',
+        linkid: ''
       });
       setIsEditing(false);
     }
@@ -278,8 +323,8 @@ const BannerUpload = () => {
       type: 'image',
       file: null,
       url: '',
-      linkUrl: '',
-      linkTarget: '_self'
+      linktype: '',
+      linkid: ''
     });
   };
 
@@ -293,10 +338,18 @@ const BannerUpload = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setCurrentItem({
-      ...currentItem,
-      [field]: value
-    });
+    if (field === 'linktype') {
+      setCurrentItem({
+        ...currentItem,
+        [field]: value,
+        linkid: '' // Reset linkid when linktype changes
+      });
+    } else {
+      setCurrentItem({
+        ...currentItem,
+        [field]: value
+      });
+    }
   };
 
   const handleFileChange = (event) => {
@@ -376,8 +429,8 @@ const BannerUpload = () => {
           fileName: fileName,
           filePath: filePath,
           mediaType: currentItem.type,
-          linkUrl: currentItem.linkUrl || null,
-          linkTarget: currentItem.linkTarget || '_self',
+          linkType: currentItem.linktype || null,
+          linkId: currentItem.linkid || null,
         };
 
         await adminService.banners.upload(metadata); // Assuming this endpoint can handle updates
@@ -389,8 +442,8 @@ const BannerUpload = () => {
             fileName: currentItem.url,
             filePath: currentItem.url,
             mediaType: 'youtube',
-            linkUrl: currentItem.linkUrl || null,
-            linkTarget: currentItem.linkTarget || '_self',
+            linkType: currentItem.linktype || null,
+            linkId: currentItem.linkid || null,
           };
 
           await adminService.banners.upload(metadata);
@@ -410,8 +463,8 @@ const BannerUpload = () => {
             fileName: currentItem.file.name,
             filePath: filePath,
             mediaType: currentItem.type,
-            linkUrl: currentItem.linkUrl || null,
-            linkTarget: currentItem.linkTarget || '_self',
+            linkType: currentItem.linktype || null,
+            linkId: currentItem.linkid || null,
           };
 
           await adminService.banners.upload(metadata);
@@ -568,38 +621,38 @@ const BannerUpload = () => {
                 }
               }}
             >
-              <Tab 
-                label="Image" 
-                value="image" 
-                sx={{ 
-                  backgroundColor: currentItem.type === 'image' ? 'primary.main' : 'grey.200',
-                  color: currentItem.type === 'image' ? 'white' : 'black',
+              <Tab
+                label="Image"
+                value="image"
+                sx={{
+                  backgroundColor: currentItem.type === 'image' ? 'white' : 'grey.200',
+                  color: currentItem.type === 'image' ? 'black' : 'black',
                   '&:hover': {
-                    backgroundColor: currentItem.type === 'image' ? 'primary.dark' : 'grey.300',
+                    backgroundColor: currentItem.type === 'image' ? 'grey.100' : 'grey.300',
                   }
-                }} 
+                }}
               />
-              <Tab 
-                label="Video" 
-                value="video" 
-                sx={{ 
-                  backgroundColor: currentItem.type === 'video' ? 'primary.main' : 'grey.200',
-                  color: currentItem.type === 'video' ? 'white' : 'black',
+              <Tab
+                label="Video"
+                value="video"
+                sx={{
+                  backgroundColor: currentItem.type === 'video' ? 'white' : 'grey.200',
+                  color: currentItem.type === 'video' ? 'black' : 'black',
                   '&:hover': {
-                    backgroundColor: currentItem.type === 'video' ? 'primary.dark' : 'grey.300',
+                    backgroundColor: currentItem.type === 'video' ? 'grey.100' : 'grey.300',
                   }
-                }} 
+                }}
               />
-              <Tab 
-                label="YouTube" 
-                value="youtube" 
-                sx={{ 
-                  backgroundColor: currentItem.type === 'youtube' ? 'primary.main' : 'grey.200',
-                  color: currentItem.type === 'youtube' ? 'white' : 'black',
+              <Tab
+                label="YouTube"
+                value="youtube"
+                sx={{
+                  backgroundColor: currentItem.type === 'youtube' ? 'white' : 'grey.200',
+                  color: currentItem.type === 'youtube' ? 'black' : 'black',
                   '&:hover': {
-                    backgroundColor: currentItem.type === 'youtube' ? 'primary.dark' : 'grey.300',
+                    backgroundColor: currentItem.type === 'youtube' ? 'grey.100' : 'grey.300',
                   }
-                }} 
+                }}
               />
             </Tabs>
           </AppBar>
@@ -683,27 +736,44 @@ const BannerUpload = () => {
             </Grid>
             
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Link URL (optional)"
-                value={currentItem.linkUrl}
-                onChange={(e) => handleInputChange('linkUrl', e.target.value)}
-                margin="normal"
-                placeholder="https://example.com"
-                variant="outlined"
-              />
-              
               <FormControl fullWidth margin="normal" variant="outlined">
-                <InputLabel>Link Target</InputLabel>
+                <InputLabel>Link Type</InputLabel>
                 <Select
-                  value={currentItem.linkTarget}
-                  onChange={(e) => handleInputChange('linkTarget', e.target.value)}
-                  label="Link Target"
+                  value={currentItem.linktype}
+                  onChange={(e) => handleInputChange('linktype', e.target.value)}
+                  label="Link Type"
                 >
-                  <MenuItem value="_self">Same Window</MenuItem>
-                  <MenuItem value="_blank">New Window</MenuItem>
+                  <MenuItem value="">None</MenuItem>
+                  <MenuItem value="category">Category</MenuItem>
+                  <MenuItem value="product">Product</MenuItem>
                 </Select>
               </FormControl>
+
+              {currentItem.linktype === 'category' && (
+                <Autocomplete
+                  options={categories}
+                  getOptionLabel={(option) => option.name}
+                  value={categories.find(cat => cat.id === currentItem.linkid) || null}
+                  onChange={(event, newValue) => handleInputChange('linkid', newValue ? newValue.id : '')}
+                  onInputChange={(event, newInputValue) => setCategorySearch(newInputValue)}
+                  renderInput={(params) => <TextField {...params} label="Category" />}
+                  fullWidth
+                  margin="normal"
+                />
+              )}
+
+              {currentItem.linktype === 'product' && (
+                <Autocomplete
+                  options={products}
+                  getOptionLabel={(option) => option.name}
+                  value={products.find(prod => prod.id === currentItem.linkid) || null}
+                  onChange={(event, newValue) => handleInputChange('linkid', newValue ? newValue.id : '')}
+                  onInputChange={(event, newInputValue) => setProductSearch(newInputValue)}
+                  renderInput={(params) => <TextField {...params} label="Product" />}
+                  fullWidth
+                  margin="normal"
+                />
+              )}
               
               {isEditing && (
                 <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 2 }}>

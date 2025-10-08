@@ -61,7 +61,7 @@ function Products() {
   });
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 20,
     total: 0,
     totalPages: 0
   });
@@ -114,7 +114,7 @@ function Products() {
       // Prepare query parameters with default values for initial load
       const params = {
         page: 1,
-        limit: 10,
+        limit: 20,
       };
       
       // Fetch products from API
@@ -125,7 +125,7 @@ function Products() {
       setPagination(prevPagination => ({
         ...prevPagination,
         page: 1,
-        limit: 10,
+        limit: 20,
         total: response.data.pagination?.totalCount || 0,
         totalPages: response.data.pagination?.totalPages || 0,
         hasNext: response.data.pagination?.hasNext || false,
@@ -488,21 +488,17 @@ function Products() {
                     <TableRow key={product.id}>
                       <TableCell>{product.id}</TableCell>
                       <TableCell>
-                        {product.images && product.images.length > 0 ? (
-                          <img
-                            src={product.images[0].image_path || `/products/${product.images[0].path?.split('/').pop()}`}
-                            alt={product.name}
-                            style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
-                            onError={(e) => {
-                              e.target.src = '/products/placeholder.png';
-                              e.target.onerror = null;
-                            }}
-                          />
-                        ) : (
-                          <Box sx={{ width: '50px', height: '50px', backgroundColor: '#f0f0f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography variant="caption">No Image</Typography>
-                          </Box>
-                        )}
+                        <img
+                          src={product.images && product.images.length > 0 ? (product.images[0].image_path || `/products/${product.images[0].path?.split('/').pop()}`) : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjBmMGYwIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4='}
+                          alt={product.name}
+                          style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                          onError={(e) => {
+                            if (!e.target.src.includes('data:image/svg+xml')) {
+                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjBmMGYwIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4=';
+                            }
+                            e.target.onerror = null;
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -574,13 +570,13 @@ function Products() {
               onRowsPerPageChange={(event) => {
                 setPagination({
                   ...pagination,
-                  limit: parseInt(event.target.value, 10),
+                  limit: parseInt(event.target.value, 20),
                   page: 1 // Reset to first page when changing rows per page
                 });
                 // Fetch products with new limit, using search if there's a search query
                 fetchProducts(!!searchQuery);
               }}
-              rowsPerPageOptions={[5, 10, 25, 50]}
+              rowsPerPageOptions={[10, 20, 50, 100]}
             />
           </Box>
         </>

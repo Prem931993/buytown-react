@@ -56,38 +56,26 @@ const menuItems = [
     badge: null
   },
   {
-    text: 'Orders',
-    icon: <ShoppingCart />,
-    path: '/orders',
-    badge: '12',
+    text: 'Products',
+    icon: <Inventory />,
+    path: null,
+    badge: null,
     children: [
-      { text: 'All Orders', path: '/orders' },
-      { text: 'Ordered Customers', path: '/orders/customers' }
+      { text: 'All Products', path: '/products', icon: <Inventory /> },
+      { text: 'Categories', path: '/categories', icon: <CategoryIcon /> },
+      { text: 'Brands', path: '/brands', icon: <Business /> },
+      { text: 'Variations', path: '/variations', icon: <Tune /> }
     ]
   },
   {
-    text: 'Products',
-    icon: <Inventory />,
-    path: '/products',
-    badge: null
-  },
-  {
-    text: 'Categories',
-    icon: <CategoryIcon />,
-    path: '/categories',
-    badge: null
-  },
-  {
-    text: 'Brands',
-    icon: <Business />,
-    path: '/brands',
-    badge: null
-  },
-  {
-    text: 'Variations',
-    icon: <Tune />,
-    path: '/variations',
-    badge: null
+    text: 'Orders',
+    icon: <ShoppingCart />,
+    path: null,
+    badge: null,
+    children: [
+      { text: 'All Orders', path: '/orders', icon: <ShoppingCart /> },
+      { text: 'Ordered Customers', path: '/orders/customers', icon: <People /> }
+    ]
   },
   {
     text: 'Users',
@@ -96,64 +84,36 @@ const menuItems = [
     badge: null
   },
   {
-    text: 'Reports',
+    text: 'Reports & Analytics',
     icon: <Assessment />,
     path: '/reports',
     badge: null
   },
   {
-    text: 'Vehicle Management',
-    icon: <DirectionsCar />,
-    path: '/vehicles',
-    badge: null
-  },
-  {
-    text: 'Delivery Settings',
-    icon: <Route />,
-    path: '/delivery',
-    badge: null
-  },
-  {
-    text: 'Tax Management',
-    icon: <Receipt />,
-    path: '/tax',
-    badge: null
-  },
-  {
-    text: 'Payment Gateway',
-    icon: <Payment />,
-    path: '/payment',
-    badge: null
-  },
-  {
-    text: 'SMS Configuration',
-    icon: <Sms />,
-    path: '/sms',
-    badge: null
-  },
-  {
-    text: 'Email Configuration',
-    icon: <Email />,
-    path: '/email',
-    badge: null
-  },
-  {
-    text: 'Pages',
+    text: 'Content',
     icon: <Description />,
-    path: '/pages',
-    badge: null
-  },
-
-  {
-    text: 'General',
-    icon: <Settings />,
-    path: '/general',
+    path: null,
     badge: null,
     children: [
-      { text: 'Settings', path: '/general/settings' },
-      { text: 'Banner Upload', path: '/general/banner-upload' }
+      { text: 'Pages', path: '/pages', icon: <Description /> },
+      { text: 'Banner Upload', path: '/general/banner-upload', icon: <Settings /> }
     ]
   },
+  {
+    text: 'Settings',
+    icon: <Settings />,
+    path: null,
+    badge: null,
+    children: [
+      { text: 'General', path: '/general/settings', icon: <Settings /> },
+      { text: 'Vehicle Management', path: '/vehicles', icon: <DirectionsCar /> },
+      { text: 'Delivery', path: '/delivery', icon: <Route /> },
+      { text: 'Payment Gateway', path: '/payment', icon: <Payment /> },
+      { text: 'Tax Management', path: '/tax', icon: <Receipt /> },
+      { text: 'SMS Configuration', path: '/sms', icon: <Sms /> },
+      { text: 'Email Configuration', path: '/email', icon: <Email /> }
+    ]
+  }
 ];
 
 function Layout() {
@@ -163,13 +123,14 @@ function Layout() {
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [expandedMenus, setExpandedMenus] = useState({});
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const drawerWidth = drawerCollapsed ? 80 : 240;
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    setMobileOpen(true);
   };
 
   const handleMenuClick = (event) => {
@@ -193,11 +154,21 @@ function Layout() {
     handleMenuClose();
   };
 
+  const handleAccordionToggle = (menuKey) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuKey]: !prev[menuKey]
+    }));
+  };
+
   // Notification functions
   const fetchNotifications = async () => {
     try {
-      const response = await adminService.notifications.getNotifications({ limit: 10 });
-      setNotifications(response.data || []);
+      const response = await adminService.notifications.getNotifications({ limit: 20 });
+      console.log("notifications", response.data);
+      setNotifications(response.data.notifications || []);
+
+      // Fetch unread count
       const countResponse = await adminService.notifications.getUnreadCount();
       setUnreadCount(countResponse.data.unreadCount || 0);
     } catch (error) {
@@ -240,38 +211,38 @@ function Layout() {
       {/* Header */}
       <Box
         sx={{
-          p: 3,
+          p: drawerCollapsed ? 1 : 3,
           background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: drawerCollapsed ? 'center' : 'space-between',
         }}
       >
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => {
-            navigate('/');
-            setMobileOpen(false);
-          }}
-        >
+        {!drawerCollapsed && (
           <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mr: 2,
+            sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => {
+              navigate('/');
+              setMobileOpen(false);
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              BT
-            </Typography>
-          </Box>
-          {!drawerCollapsed && (
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mr: 2,
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                BT
+              </Typography>
+            </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
                 BuyTown
@@ -280,8 +251,8 @@ function Layout() {
                 Admin Panel
               </Typography>
             </Box>
-          )}
-        </Box>
+          </Box>
+        )}
         <IconButton
           onClick={() => setDrawerCollapsed(!drawerCollapsed)}
           sx={{ color: 'white' }}
@@ -295,15 +266,22 @@ function Layout() {
         <List sx={{ px: 2, py: 1 }}>
           {menuItems.map((item) => {
             const hasChildren = item.children && item.children.length > 0;
-            const isConfigurationActive = location.pathname.startsWith('/configuration');
+            const isExpanded = expandedMenus[item.text] || false;
+            const isActive = location.pathname === item.path ||
+              (hasChildren && item.children.some(child =>
+                child.path === location.pathname ||
+                (child.children && child.children.some(subChild => subChild.path === location.pathname))
+              ));
 
             return (
               <React.Fragment key={item.text}>
                 <ListItem disablePadding sx={{ mb: 1 }}>
                   <ListItemButton
-                    selected={location.pathname === item.path || (hasChildren && isConfigurationActive)}
+                    selected={isActive}
                     onClick={() => {
-                      if (!hasChildren) {
+                      if (hasChildren) {
+                        handleAccordionToggle(item.text);
+                      } else {
                         navigate(item.path);
                         setMobileOpen(false);
                       }
@@ -319,61 +297,143 @@ function Layout() {
                         },
                       },
                       '&:hover': {
-                        background: 'rgba(99, 102, 241, 0.08)',
+                        background: isActive ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' : 'rgba(99, 102, 241, 0.08)',
                       },
                     }}
                   >
                     <ListItemIcon
                       sx={{
-                        color: (location.pathname === item.path || (hasChildren && isConfigurationActive)) ? 'white' : 'inherit',
+                        color: isActive ? 'white' : 'inherit',
                         minWidth: drawerCollapsed ? 0 : 40,
                       }}
                     >
                       {item.icon}
                     </ListItemIcon>
                     {!drawerCollapsed && (
-                      <ListItemText
-                        primary={item.text}
-                        primaryTypographyProps={{
-                          fontWeight: (location.pathname === item.path || (hasChildren && isConfigurationActive)) ? 600 : 500,
-                        }}
-                      />
-                    )}
-                    {!drawerCollapsed && item.badge && (
-                      <Badge badgeContent={item.badge} color="error" />
+                      <>
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontWeight: isActive ? 600 : 500,
+                          }}
+                        />
+                        {hasChildren && (
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: isActive ? 'white' : 'inherit',
+                              p: 0.5,
+                              ml: 'auto',
+                              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.2s',
+                            }}
+                          >
+                            <ChevronRight sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        )}
+                        {item.badge && (
+                          <Badge badgeContent={item.badge} color="error" />
+                        )}
+                      </>
                     )}
                   </ListItemButton>
                 </ListItem>
 
-                {/* Render children items */}
-                {hasChildren && !drawerCollapsed && (
+                {/* Render children items with accordion */}
+                {hasChildren && !drawerCollapsed && isExpanded && (
                   <List component="div" disablePadding sx={{ pl: 4 }}>
-                    {item.children.map((child) => (
-                      <ListItem key={child.text} disablePadding sx={{ mb: 0.5 }}>
-                        <ListItemButton
-                          selected={location.pathname === child.path}
-                          onClick={() => {
-                            navigate(child.path);
-                            setMobileOpen(false);
-                          }}
-                          sx={{
-                            borderRadius: 2,
-                            '&.Mui-selected': {
-                              background: 'rgba(99, 102, 241, 0.1)',
-                              color: '#6366f1',
-                            },
-                          }}
-                        >
-                          <ListItemText
-                            primary={child.text}
-                            primaryTypographyProps={{
-                              fontSize: '0.875rem',
-                              fontWeight: location.pathname === child.path ? 600 : 400,
-                            }}
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                    ))}
+                    {item.children.map((child) => {
+                      const hasSubChildren = child.children && child.children.length > 0;
+                      const isChildActive = location.pathname === child.path ||
+                        (hasSubChildren && child.children.some(subChild => subChild.path === location.pathname));
+
+                      return (
+                        <React.Fragment key={child.text}>
+                          <ListItem disablePadding sx={{ mb: 0.5 }}>
+                            <ListItemButton
+                              selected={isChildActive}
+                              onClick={() => {
+                                if (hasSubChildren) {
+                                  handleAccordionToggle(`${item.text}-${child.text}`);
+                                } else {
+                                  navigate(child.path);
+                                  setMobileOpen(false);
+                                }
+                              }}
+                              sx={{
+                                borderRadius: 2,
+                                '&.Mui-selected': {
+                                  background: 'rgba(99, 102, 241, 0.1)',
+                                  color: '#6366f1',
+                                },
+                                '&:hover': {
+                                  background: isChildActive ? 'rgba(99, 102, 241, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                                },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 30 }}>
+                                {child.icon}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={child.text}
+                                primaryTypographyProps={{
+                                  fontSize: '0.875rem',
+                                  fontWeight: isChildActive ? 600 : 400,
+                                }}
+                              />
+                              {hasSubChildren && (
+                                <IconButton
+                                  size="small"
+                                  sx={{
+                                    p: 0.5,
+                                    ml: 'auto',
+                                    transform: expandedMenus[`${item.text}-${child.text}`] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s',
+                                  }}
+                                >
+                                  <ChevronRight sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              )}
+                            </ListItemButton>
+                          </ListItem>
+
+                          {/* Render sub-children */}
+                          {hasSubChildren && expandedMenus[`${item.text}-${child.text}`] && (
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                              {child.children.map((subChild) => (
+                                <ListItem key={subChild.text} disablePadding sx={{ mb: 0.5 }}>
+                                  <ListItemButton
+                                    selected={location.pathname === subChild.path}
+                                    onClick={() => {
+                                      navigate(subChild.path);
+                                      setMobileOpen(false);
+                                    }}
+                                    sx={{
+                                      borderRadius: 2,
+                                      '&.Mui-selected': {
+                                        background: 'rgba(99, 102, 241, 0.08)',
+                                        color: '#6366f1',
+                                      },
+                                      '&:hover': {
+                                        background: location.pathname === subChild.path ? 'rgba(99, 102, 241, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                                      },
+                                    }}
+                                  >
+                                    <ListItemText
+                                      primary={subChild.text}
+                                      primaryTypographyProps={{
+                                        fontSize: '0.8rem',
+                                        fontWeight: location.pathname === subChild.path ? 600 : 400,
+                                      }}
+                                    />
+                                  </ListItemButton>
+                                </ListItem>
+                              ))}
+                            </List>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </List>
                 )}
               </React.Fragment>
@@ -423,8 +483,8 @@ function Layout() {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: { sm: `calc(100% - ${drawerWidth}px)`, xs: mobileOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
+          ml: { sm: `${drawerWidth}px`, xs: mobileOpen ? `${drawerWidth}px` : 0 },
           background: 'white',
           color: 'text.primary',
           borderBottom: '1px solid',
@@ -442,7 +502,7 @@ function Layout() {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2, display: { xs: 'block', sm: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
@@ -671,12 +731,9 @@ function Layout() {
         aria-label="mailbox folders"
       >
         <Drawer
-          variant="temporary"
+          variant="persistent"
           open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
+          onClose={() => setMobileOpen(false)}
           sx={{
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': {

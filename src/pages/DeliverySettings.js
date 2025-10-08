@@ -12,12 +12,21 @@ import {
   CircularProgress,
   Divider,
   Paper,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   LocationOn as LocationIcon,
   RadioButtonChecked as RadiusIcon,
   Refresh as RefreshIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { adminService } from '../services/adminService.js';
 
@@ -25,10 +34,7 @@ import { adminService } from '../services/adminService.js';
 function DeliverySettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState({
-    center_point: '',
-    delivery_radius_km: 10,
-  });
+  const [settings, setSettings] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -39,22 +45,15 @@ function DeliverySettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await adminService.delivery.getSettings();
-      setSettings({
-        center_point: response.settings?.center_point || '',
-        delivery_radius_km: response.settings?.delivery_radius_km || 10,
-      });
+      const response = await adminService.delivery.getAllSettings();
+      setSettings(response.settings || []);
     } catch (error) {
       console.error('Error fetching delivery settings:', error);
-      // Fallback to default settings if API fails
-      setSettings({
-        center_point: '',
-        delivery_radius_km: 10,
-      });
+      setSettings([]);
       setSnackbar({
         open: true,
-        message: 'Failed to fetch delivery settings, using defaults',
-        severity: 'warning',
+        message: 'Failed to fetch delivery settings',
+        severity: 'error',
       });
     } finally {
       setLoading(false);
@@ -66,11 +65,79 @@ function DeliverySettings() {
   }, []);
 
   // Handle input changes
-  const handleInputChange = (field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleInputChange = (index, field, value) => {
+    setSettings(prev => prev.map((setting, i) =>
+      i === index ? { ...setting, [field]: value } : setting
+    ));
+  };
+
+  // Handle toggle active
+  const handleToggleActive = (index) => {
+    setSettings(prev => prev.map((setting, i) =>
+      i === index ? { ...setting, is_active: !setting.is_active } : setting
+    ));
+  };
+
+  // Handle add new setting
+  const handleAddNew = () => {
+    setSettings(prev => [...prev, {
+      center_point: '',
+      delivery_radius_km: 10,
+      is_active: true,
+    }]);
+  };
+
+  // Handle delete setting
+  const handleDelete = async (index) => {
+    const setting = settings[index];
+    if (setting.id) {
+      // Existing setting, delete from API
+      try {
+        await adminService.delivery.deleteSetting(setting.id);
+        setSettings(prev => prev.filter((_, i) => i !== index));
+        setSnackbar({
+          open: true,
+          message: 'Delivery setting deleted successfully',
+          severity: 'success',
+        });
+      } catch (error) {
+        console.error('Error deleting delivery setting:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to delete delivery setting',
+          severity: 'error',
+        });
+      }
+    } else {
+      // New setting, just remove from array
+      setSettings(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  // Validate single setting
+  const validateSetting = (setting) => {
+    if (!setting.center_point.trim()) {
+      return 'Center point coordinates are required';
+    }
+
+    if (setting.delivery_radius_km <= 0) {
+      return 'Delivery radius must be greater than 0';
+    }
+
+    // Validate coordinates format (latitude,longitude)
+    const coords = setting.center_point.split(',');
+    if (coords.length !== 2) {
+      return 'Center point must be in format: latitude,longitude';
+    }
+
+    const lat = parseFloat(coords[0].trim());
+    const lng = parseFloat(coords[1].trim());
+
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180';
+    }
+
+    return null;
   };
 
   // Handle form submission
@@ -78,55 +145,48 @@ function DeliverySettings() {
     try {
       setSaving(true);
 
-      // Validate inputs
-      if (!settings.center_point.trim()) {
-        setSnackbar({
-          open: true,
-          message: 'Center point coordinates are required',
-          severity: 'error',
-        });
-        return;
+      // Validate all settings
+      for (let i = 0; i < settings.length; i++) {
+        const error = validateSetting(settings[i]);
+        if (error) {
+          setSnackbar({
+            open: true,
+            message: `Setting ${i + 1}: ${error}`,
+            severity: 'error',
+          });
+          return;
+        }
       }
 
-      if (settings.delivery_radius_km <= 0) {
-        setSnackbar({
-          open: true,
-          message: 'Delivery radius must be greater than 0',
-          severity: 'error',
-        });
-        return;
-      }
+      // Save each setting
+      const promises = settings.map(async (setting) => {
+        if (setting.id) {
+          // Update existing
+          return adminService.delivery.updateSetting(setting.id, {
+            center_point: setting.center_point,
+            delivery_radius_km: setting.delivery_radius_km,
+            is_active: setting.is_active,
+          });
+        } else {
+          // Create new
+          return adminService.delivery.createSetting({
+            center_point: setting.center_point,
+            delivery_radius_km: setting.delivery_radius_km,
+            is_active: setting.is_active,
+          });
+        }
+      });
 
-      // Validate coordinates format (latitude,longitude)
-      const coords = settings.center_point.split(',');
-      if (coords.length !== 2) {
-        setSnackbar({
-          open: true,
-          message: 'Center point must be in format: latitude,longitude',
-          severity: 'error',
-        });
-        return;
-      }
+      await Promise.all(promises);
 
-      const lat = parseFloat(coords[0].trim());
-      const lng = parseFloat(coords[1].trim());
-
-      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        setSnackbar({
-          open: true,
-          message: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180',
-          severity: 'error',
-        });
-        return;
-      }
-
-      // Save settings
-      await adminService.delivery.updateSettings(settings);
       setSnackbar({
         open: true,
         message: 'Delivery settings saved successfully',
         severity: 'success',
       });
+
+      // Refresh settings
+      await fetchSettings();
     } catch (error) {
       console.error('Error saving delivery settings:', error);
       setSnackbar({
@@ -140,10 +200,10 @@ function DeliverySettings() {
   };
 
   // Get coordinates display
-  const getCoordinatesDisplay = () => {
-    if (!settings.center_point) return 'Not set';
+  const getCoordinatesDisplay = (center_point) => {
+    if (!center_point) return 'Not set';
 
-    const coords = settings.center_point.split(',');
+    const coords = center_point.split(',');
     if (coords.length === 2) {
       const lat = parseFloat(coords[0].trim());
       const lng = parseFloat(coords[1].trim());
@@ -180,71 +240,146 @@ function DeliverySettings() {
           <Grid item xs={12} md={8}>
             <Card sx={{ borderRadius: 2 }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                  <LocationIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  Delivery Zone Configuration
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                    <LocationIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    Delivery Zone Configuration
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddNew}
+                    size="small"
+                  >
+                    Add New
+                  </Button>
+                </Box>
 
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Configure the delivery zone by setting the center point coordinates and delivery radius.
-                    Orders will be accepted only within this delivery zone.
+                    Configure multiple delivery zones by setting center point coordinates and delivery radius.
+                    Orders will be accepted only within active delivery zones.
                   </Typography>
                 </Box>
 
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Center Point Coordinates"
-                      value={settings.center_point}
-                      onChange={(e) => handleInputChange('center_point', e.target.value)}
-                      placeholder="e.g., 19.0760,72.8777"
-                      helperText="Enter coordinates as: latitude,longitude"
-                      InputProps={{
-                        startAdornment: <LocationIcon sx={{ mr: 1, color: 'action.active' }} />,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Delivery Radius (km)"
-                      type="number"
-                      value={settings.delivery_radius_km}
-                      onChange={(e) => handleInputChange('delivery_radius_km', parseFloat(e.target.value) || 0)}
-                      inputProps={{ min: 1, max: 100 }}
-                      InputProps={{
-                        startAdornment: <RadiusIcon sx={{ mr: 1, color: 'action.active' }} />,
-                      }}
-                      helperText="Maximum delivery distance from center point"
-                    />
-                  </Grid>
-                </Grid>
+                {settings.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No delivery settings configured. Click "Add New" to create your first delivery zone.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <List>
+                    {settings.map((setting, index) => (
+                      <ListItem key={setting.id || `new-${index}`} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                        <ListItemText>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} md={5}>
+                              <TextField
+                                fullWidth
+                                label="Center Point Coordinates"
+                                value={setting.center_point}
+                                onChange={(e) => handleInputChange(index, 'center_point', e.target.value)}
+                                placeholder="e.g., 19.0760,72.8777"
+                                helperText="latitude,longitude"
+                                size="small"
+                                InputProps={{
+                                  startAdornment: <LocationIcon sx={{ mr: 1, color: 'action.active', fontSize: 18 }} />,
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} md={4}>
+                              <TextField
+                                fullWidth
+                                label="Delivery Radius (km)"
+                                type="number"
+                                value={setting.delivery_radius_km}
+                                onChange={(e) => handleInputChange(index, 'delivery_radius_km', parseFloat(e.target.value) || 0)}
+                                inputProps={{ min: 1, max: 100 }}
+                                size="small"
+                                InputProps={{
+                                  startAdornment: <RadiusIcon sx={{ mr: 1, color: 'action.active', fontSize: 18 }} />,
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} md={3}>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Coverage: {Math.round(Math.PI * Math.pow(setting.delivery_radius_km, 2))} km²
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {getCoordinatesDisplay(setting.center_point)}
+                              </Typography>
+                            </Grid>
+                          </Grid>
+                        </ListItemText>
+                        <ListItemSecondaryAction>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pr: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontSize: '0.8rem',
+                                  color: setting.is_active ? 'success.main' : 'text.secondary',
+                                  fontWeight: 500,
+                                  minWidth: 55,
+                                  textAlign: 'right'
+                                }}
+                              >
+                                {setting.is_active ? 'Active' : 'Inactive'}
+                              </Typography>
+                              <Switch
+                                checked={setting.is_active}
+                                onChange={() => handleToggleActive(index)}
+                                color="primary"
+                                size="small"
+                                sx={{
+                                  '& .MuiSwitch-thumb': {
+                                    backgroundColor: setting.is_active ? 'success.main' : 'grey.400',
+                                  },
+                                  '& .MuiSwitch-track': {
+                                    backgroundColor: setting.is_active ? 'success.light' : 'grey.300',
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Box sx={{ width: 1, height: 24, borderLeft: 1, borderColor: 'divider', mx: 0.5 }} />
+                            <IconButton
+                              onClick={() => handleDelete(index)}
+                              color="error"
+                              size="small"
+                              sx={{
+                                '&:hover': {
+                                  backgroundColor: 'error.light',
+                                  color: 'white',
+                                },
+                                borderRadius: 1,
+                                p: 0.75,
+                                ml: 0.5,
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
 
-                <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                    onClick={handleSubmit}
-                    disabled={saving}
-                    sx={{ minWidth: 120 }}
-                  >
-                    {saving ? <CircularProgress size={20} /> : 'Save Settings'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      setSettings({
-                        center_point: '',
-                        delivery_radius_km: 10,
-                      });
-                    }}
-                  >
-                    Reset
-                  </Button>
-                </Box>
+                {settings.length > 0 && (
+                  <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<SaveIcon />}
+                      onClick={handleSubmit}
+                      disabled={saving}
+                      sx={{ minWidth: 120 }}
+                    >
+                      {saving ? <CircularProgress size={20} /> : 'Save All Settings'}
+                    </Button>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           </Grid>
@@ -253,15 +388,15 @@ function DeliverySettings() {
           <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.50' }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                Current Settings
+                Current Settings Summary
               </Typography>
 
               <Box sx={{ mb: 3 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Center Point
+                  Total Delivery Zones
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {getCoordinatesDisplay()}
+                  {settings.length}
                 </Typography>
               </Box>
 
@@ -269,10 +404,21 @@ function DeliverySettings() {
 
               <Box sx={{ mb: 3 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Delivery Radius
+                  Active Zones
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {settings.delivery_radius_km} km
+                  {settings.filter(s => s.is_active).length}
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Average Radius
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {settings.length > 0 ? (settings.reduce((sum, s) => sum + s.delivery_radius_km, 0) / settings.length).toFixed(1) : 0} km
                 </Typography>
               </Box>
 
@@ -280,10 +426,10 @@ function DeliverySettings() {
 
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Coverage Area
+                  Total Coverage Area
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {Math.round(Math.PI * Math.pow(settings.delivery_radius_km, 2))} km²
+                  {settings.reduce((sum, s) => sum + Math.round(Math.PI * Math.pow(s.delivery_radius_km, 2)), 0)} km²
                 </Typography>
               </Box>
             </Paper>

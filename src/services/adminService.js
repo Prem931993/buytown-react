@@ -463,12 +463,28 @@ export const adminService = {
 
   // Delivery operations
   delivery: {
+    getAllSettings: async () => {
+      const response = await adminApiClient.get('/delivery');
+      return response.data;
+    },
     getSettings: async () => {
-      const response = await adminApiClient.get('/delivery/settings');
+      const response = await adminApiClient.get('/delivery/single');
+      return response.data;
+    },
+    createSetting: async (settingData) => {
+      const response = await adminApiClient.post('/delivery', settingData);
+      return response.data;
+    },
+    updateSetting: async (id, settingData) => {
+      const response = await adminApiClient.put(`/delivery/${id}`, settingData);
+      return response.data;
+    },
+    deleteSetting: async (id) => {
+      const response = await adminApiClient.delete(`/delivery/${id}`);
       return response.data;
     },
     updateSettings: async (settingsData) => {
-      const response = await adminApiClient.put('/delivery/settings', settingsData);
+      const response = await adminApiClient.put('/delivery', settingsData);
       return response.data;
     },
   },
