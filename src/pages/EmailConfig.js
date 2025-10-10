@@ -29,8 +29,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Avatar,
-  Divider
+  Avatar
 } from '@mui/material';
 import {
   Add as AddIcon,
