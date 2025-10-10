@@ -24,7 +24,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Avatar,
+  Divider
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -309,19 +315,57 @@ function EmailConfig() {
             <form onSubmit={handleSubmit}>
               <Grid container spacing={3}>
                 <Grid item xs={12}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Configuration Type"
-                    name="config_type"
-                    value={formData.config_type}
-                    onChange={handleInputChange}
-                    size="small"
-                  >
-                    <option value="smtp">SMTP</option>
-                    <option value="gmail_app_password">Gmail App Password</option>
-                    <option value="oauth2">OAuth2</option>
-                  </TextField>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="config-type-label">Configuration Type</InputLabel>
+                    <Select
+                      labelId="config-type-label"
+                      label="Configuration Type"
+                      name="config_type"
+                      value={formData.config_type}
+                      onChange={handleInputChange}
+                      sx={{
+                        '& .MuiSelect-select': {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        },
+                      }}
+                    >
+                      <MenuItem value="smtp">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
+                            <EmailIcon sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">SMTP</Typography>
+                            <Typography variant="caption" color="text.secondary">Standard email protocol</Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="gmail_app_password">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 24, height: 24, bgcolor: 'error.main' }}>
+                            <EmailIcon sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">Gmail App Password</Typography>
+                            <Typography variant="caption" color="text.secondary">Gmail with app password</Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="oauth2">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 24, height: 24, bgcolor: 'success.main' }}>
+                            <EmailIcon sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">OAuth2</Typography>
+                            <Typography variant="caption" color="text.secondary">Google OAuth2 authentication</Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
