@@ -455,15 +455,17 @@ function OrderDetail() {
           >
             Print
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={pdfLoading.invoice ? <CircularProgress size={20} /> : <PictureAsPdf />}
-            onClick={handleInvoicePDFDownload}
-            disabled={pdfLoading.invoice}
-            sx={{ bgcolor: 'background.paper', '&:hover': { bgcolor: 'grey.50' } }}
-          >
-            {pdfLoading.invoice ? 'Downloading...' : 'Invoice PDF'}
-          </Button>
+          {orderDetails.status && ['completed', 'approved', 'rejected', 'delivered'].includes(orderDetails.status.toLowerCase()) && (
+            <Button
+              variant="outlined"
+              startIcon={pdfLoading.invoice ? <CircularProgress size={20} /> : <PictureAsPdf />}
+              onClick={handleInvoicePDFDownload}
+              disabled={pdfLoading.invoice}
+              sx={{ bgcolor: 'background.paper', '&:hover': { bgcolor: 'grey.50' } }}
+            >
+              {pdfLoading.invoice ? 'Downloading...' : 'Invoice PDF'}
+            </Button>
+          )}
           <Button
             variant="contained"
             onClick={() => navigate('/orders')}
