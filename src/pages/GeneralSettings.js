@@ -325,21 +325,6 @@ const GeneralSettings = () => {
     }
   };
 
-  const handleSaveSettings = async () => {
-    try {
-      setLoading(true);
-      // Save all settings
-      await handleSaveGeneral();
-      await handleSaveColorManagement();
-      await handleSaveApplicationSettings();
-      showSnackbar('All settings saved successfully!', 'success');
-    } catch (error) {
-      showSnackbar('Failed to save all settings: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLogoFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
