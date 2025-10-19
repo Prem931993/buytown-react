@@ -52,6 +52,7 @@ function OrderDetail() {
   // Calculated totals state
   const [calculatedSubtotal, setCalculatedSubtotal] = useState(0);
   const [calculatedTax, setCalculatedTax] = useState(0);
+  const [calculatedDeliveryTax, setCalculatedDeliveryTax] = useState(0);
   const [calculatedDiscount, setCalculatedDiscount] = useState(0);
   const [calculatedTotal, setCalculatedTotal] = useState(0);
 
@@ -91,7 +92,7 @@ function OrderDetail() {
 
     try {
       // Use the new API endpoint to calculate delivery charges based on vehicle
-      const response = await adminService.orders.calculateDeliveryCharge(orderDetails.id, vehicleId);
+      const response = await adminService.orders.calculateDeliveryCharge(orderDetails.id, vehicleId, distance);
 
       if (response.success) {
         setCalculatedDeliveryCharges(response.delivery_charge);
@@ -135,10 +136,16 @@ function OrderDetail() {
       const discountCalc = orderDetails.discount || 0;
       const deliveryChargesCalc = (orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges : calculatedDeliveryCharges;
 
-      const totalCalc = subtotalCalc + taxCalc + deliveryChargesCalc - discountCalc;
+      // Delivery charges already include 18% GST, so extract the GST portion
+      const deliveryBase = deliveryChargesCalc / 1.18;
+      const deliveryTaxCalc = deliveryChargesCalc - deliveryBase;
+
+      const totalTax = taxCalc; // includes delivery GST
+      const totalCalc = subtotalCalc + deliveryChargesCalc + totalTax - discountCalc;
 
       setCalculatedSubtotal(subtotalCalc);
-      setCalculatedTax(taxCalc);
+      setCalculatedTax(totalTax);
+      setCalculatedDeliveryTax(deliveryTaxCalc);
       setCalculatedDiscount(discountCalc);
       setCalculatedTotal(totalCalc);
     }
@@ -735,25 +742,34 @@ function OrderDetail() {
                   <TableCell align="right">Price</TableCell>
                   <TableCell align="right">Quantity</TableCell>
                   <TableCell align="right">Tax Rate</TableCell>
+                  <TableCell align="right">CGST</TableCell>
+                  <TableCell align="right">SGST</TableCell>
                   <TableCell align="right">Tax Amount</TableCell>
                   <TableCell align="right">Total without Tax</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(orderDetails.items || []).map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.sku}</TableCell>
-                    <TableCell>{item.hsn_code || 'N/A'}</TableCell>
-                    <TableCell align="right">₹{item.price?.toFixed(2) || '0.00'}</TableCell>
-                    <TableCell align="right">{item.quantity}</TableCell>
-                    <TableCell align="right">{item.gst_rate ? `${item.gst_rate}%` : '0%'}</TableCell>
-                    <TableCell align="right">₹{item.tax_amount?.toFixed(2) || '0.00'}</TableCell>
-                    <TableCell align="right">₹{item.total?.toFixed(2) || '0.00'}</TableCell>
-                  </TableRow>
-                ))}
+                {(orderDetails.items || []).map((item) => {
+                  const taxAmount = item.tax_amount || 0;
+                  const cgst = taxAmount / 2;
+                  const sgst = taxAmount / 2;
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.sku}</TableCell>
+                      <TableCell>{item.hsn_code || 'N/A'}</TableCell>
+                      <TableCell align="right">₹{item.price?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell align="right">{item.quantity}</TableCell>
+                      <TableCell align="right">{item.gst_rate ? `${item.gst_rate}%` : '0%'}</TableCell>
+                      <TableCell align="right">₹{cgst.toFixed(2)}</TableCell>
+                      <TableCell align="right">₹{sgst.toFixed(2)}</TableCell>
+                      <TableCell align="right">₹{taxAmount.toFixed(2)}</TableCell>
+                      <TableCell align="right">₹{item.total?.toFixed(2) || '0.00'}</TableCell>
+                    </TableRow>
+                  );
+                })}
               <TableRow>
-                <TableCell colSpan={6} />
+                <TableCell colSpan={8} />
                 <TableCell align="right">
                   <Typography variant="body2" fontWeight={500}>
                     Subtotal:
@@ -765,29 +781,40 @@ function OrderDetail() {
                   </Typography>
                 </TableCell>
               </TableRow>
-              {orderDetails.tax > 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} />
-                  <TableCell align="right">
-                    <Typography variant="body2">Tax:</Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2">₹{calculatedTax.toFixed(2)}</Typography>
-                  </TableCell>
-                </TableRow>
+              <TableRow>
+                <TableCell colSpan={8} />
+                <TableCell align="right">
+                  <Typography variant="body2">Delivery Charges:</Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="body2">₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges.toFixed(2) : (calculatedDeliveryCharges > 0 ? calculatedDeliveryCharges.toFixed(2) : '0.00')}</Typography>
+                </TableCell>
+              </TableRow>
+              {calculatedTax > 0 && (
+                <>
+                  <TableRow>
+                    <TableCell colSpan={8} />
+                    <TableCell align="right">
+                      <Typography variant="body2">CGST:</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2">₹{(calculatedTax / 2).toFixed(2)}</Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={8} />
+                    <TableCell align="right">
+                      <Typography variant="body2">SGST:</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2">₹{(calculatedTax / 2).toFixed(2)}</Typography>
+                    </TableCell>
+                  </TableRow>
+                </>
               )}
-                <TableRow>
-                  <TableCell colSpan={6} />
-                  <TableCell align="right">
-                    <Typography variant="body2">Delivery Charges:</Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2">₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges?.toFixed(2) || '0.00' : calculatedDeliveryCharges.toFixed(2)}</Typography>
-                  </TableCell>
-                </TableRow>
                 {orderDetails.discount > 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} />
+                    <TableCell colSpan={8} />
                     <TableCell align="right">
                       <Typography variant="body2">Discount:</Typography>
                     </TableCell>
@@ -797,7 +824,7 @@ function OrderDetail() {
                   </TableRow>
                 )}
                 <TableRow>
-                  <TableCell colSpan={6} />
+                  <TableCell colSpan={8} />
                   <TableCell align="right">
                     <Typography variant="subtitle1" fontWeight={600}>
                       Total:
@@ -812,6 +839,43 @@ function OrderDetail() {
               </TableBody>
             </Table>
         </TableContainer>
+
+        {/* Delivery Charges Breakdown Table */}
+        {(orderDetails.deliveryCharges > 0 || calculatedDeliveryCharges > 0) && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
+              Delivery Charges Breakdown
+            </Typography>
+            <TableContainer component={Paper} variant="outlined">
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
+                    <TableCell>Description</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Delivery Charges (Base)</TableCell>
+                    <TableCell align="right">₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? (orderDetails.deliveryCharges / 1.18).toFixed(2) : (calculatedDeliveryCharges / 1.18).toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>CGST (9%)</TableCell>
+                    <TableCell align="right">₹{(calculatedDeliveryTax / 2).toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>SGST (9%)</TableCell>
+                    <TableCell align="right">₹{(calculatedDeliveryTax / 2).toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Total Delivery Charges</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>₹{(orderDetails.deliveryCharges && orderDetails.deliveryCharges > 0) ? orderDetails.deliveryCharges.toFixed(2) : calculatedDeliveryCharges.toFixed(2)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
 
       {/* Reject Reason Dialog */}
       <Dialog open={rejectDialogOpen} onClose={handleRejectDialogClose} maxWidth="sm" fullWidth>

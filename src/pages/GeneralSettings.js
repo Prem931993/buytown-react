@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import generalSettingsService from '../services/generalSettingsService';
 import categoryService from '../services/categoryService.js';
+import { adminApiClient } from '../services/adminService';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   IconButton,
@@ -21,10 +19,16 @@ import {
   CircularProgress,
   TextField,
   Autocomplete,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
   DragIndicator as DragIndicatorIcon,
+  ExpandMore as ExpandMoreIcon,
+  Save as SaveIcon,
+  CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -109,7 +113,13 @@ const GeneralSettings = () => {
       youtube: '',
       instagram: '',
       linkedin: '',
-    }
+    },
+    primaryColor: '#000000',
+    secondaryColor: '#ffffff',
+    backgroundImage: '',
+    minimumOrderValue: '',
+    abandonedCartExpiryHours: '',
+    lowStockQuantity: '',
   });
   const [logos, setLogos] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -120,6 +130,7 @@ const GeneralSettings = () => {
   const [loading, setLoading] = useState(false);
   const [newLogo, setNewLogo] = useState(null);
   const [categoriesMapped, setCategoriesMapped] = useState(false);
+  const [backgroundImageFile, setBackgroundImageFile] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -127,7 +138,6 @@ const GeneralSettings = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
 
   const showSnackbar = (message, severity) => {
     setSnackbar({ open: true, message, severity });
@@ -152,7 +162,13 @@ const GeneralSettings = () => {
             youtube: data.youtube_link || '',
             instagram: data.instagram_link || '',
             linkedin: data.linkedin_link || '',
-          }
+          },
+          primaryColor: data.primary_color || '#000000',
+          secondaryColor: data.secondary_color || '#ffffff',
+          backgroundImage: data.background_image || '',
+          minimumOrderValue: data.minimum_order_value || '',
+          abandonedCartExpiryHours: data.abandoned_cart_expiry_hours || '',
+          lowStockQuantity: data.low_stock_quantity || '',
         });
         // Store selected categories IDs for later processing
         if (data.selected_categories && Array.isArray(data.selected_categories)) {
@@ -228,10 +244,13 @@ const GeneralSettings = () => {
     });
   };
 
-  const handleSaveSettings = async () => {
+  const handleSaveGeneral = async () => {
     try {
       setLoading(true);
+      const currentResponse = await generalSettingsService.getSettings();
+      const currentData = currentResponse.data || {};
       const payload = {
+        ...currentData,
         company_name: settings.companyName,
         company_details: settings.contactDetails,
         phone_number: settings.phoneNumber,
@@ -247,12 +266,75 @@ const GeneralSettings = () => {
       };
       const response = await generalSettingsService.updateSettings(payload);
       if (response.success) {
-        showSnackbar('Settings saved successfully!', 'success');
+        showSnackbar('General settings saved successfully!', 'success');
       } else {
-        showSnackbar('Failed to save settings: ' + (response.error || 'Unknown error'), 'error');
+        showSnackbar('Failed to save general settings: ' + (response.error || 'Unknown error'), 'error');
       }
     } catch (error) {
-      showSnackbar('Failed to save settings: ' + error.message, 'error');
+      showSnackbar('Failed to save general settings: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveColorManagement = async (backgroundImageOverride) => {
+    try {
+      setLoading(true);
+      const currentResponse = await generalSettingsService.getSettings();
+      const currentData = currentResponse.data || {};
+      const payload = {
+        ...currentData,
+        primary_color: settings.primaryColor,
+        secondary_color: settings.secondaryColor,
+        background_image: backgroundImageOverride !== undefined ? backgroundImageOverride : settings.backgroundImage,
+      };
+      const response = await generalSettingsService.updateSettings(payload);
+      if (response.success) {
+        showSnackbar('Color management settings saved successfully!', 'success');
+      } else {
+        showSnackbar('Failed to save color management settings: ' + (response.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      showSnackbar('Failed to save color management settings: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveApplicationSettings = async () => {
+    try {
+      setLoading(true);
+      const currentResponse = await generalSettingsService.getSettings();
+      const currentData = currentResponse.data || {};
+      const payload = {
+        ...currentData,
+        minimum_order_value: settings.minimumOrderValue,
+        abandoned_cart_expiry_hours: settings.abandonedCartExpiryHours,
+        low_stock_quantity: settings.lowStockQuantity,
+      };
+      const response = await generalSettingsService.updateSettings(payload);
+      if (response.success) {
+        showSnackbar('Application settings saved successfully!', 'success');
+      } else {
+        showSnackbar('Failed to save application settings: ' + (response.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      showSnackbar('Failed to save application settings: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      setLoading(true);
+      // Save all settings
+      await handleSaveGeneral();
+      await handleSaveColorManagement();
+      await handleSaveApplicationSettings();
+      showSnackbar('All settings saved successfully!', 'success');
+    } catch (error) {
+      showSnackbar('Failed to save all settings: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -276,7 +358,7 @@ const GeneralSettings = () => {
       const formData = new FormData();
       formData.append('file', newLogo);
 
-      const uploadResponse = await axios.post('/upload/logos', formData, {
+      const uploadResponse = await adminApiClient.post('/upload/logos', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -341,22 +423,178 @@ const GeneralSettings = () => {
     }
   };
 
+  const handleBackgroundImageFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setBackgroundImageFile(file);
+    }
+  };
+
+  const handleUploadBackgroundImage = async () => {
+    if (!backgroundImageFile) {
+      showSnackbar('Please select a background image file', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', backgroundImageFile);
+
+      const uploadResponse = await adminApiClient.post('/upload/general-settings', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const filePath = uploadResponse.data.filePath;
+      setSettings({
+        ...settings,
+        backgroundImage: filePath,
+      });
+      showSnackbar('Background image uploaded successfully!', 'success');
+      setBackgroundImageFile(null);
+      // Automatically save the color management settings after upload
+      await handleSaveColorManagement(filePath);
+    } catch (error) {
+      showSnackbar('Failed to upload background image: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
         General Settings
       </Typography>
-      
+
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
           <CircularProgress />
         </Box>
       )}
-      
+
       <Grid container spacing={3}>
-        <Grid item xs={12} md={12} lg={12}>
-          <Card sx={{ width: '100%' }}>
-            <CardContent sx={{ width: '100%', p: 3 }}>
+        {/* General Section */}
+        <Grid item xs={12}>
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">General</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Company Name"
+                    value={settings.companyName}
+                    onChange={(e) => handleInputChange('companyName', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Contact Details"
+                    value={settings.contactDetails}
+                    onChange={(e) => handleInputChange('contactDetails', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    multiline
+                    rows={4}
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    value={settings.phoneNumber}
+                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="GSTIN Number"
+                    value={settings.gstinNumber}
+                    onChange={(e) => handleInputChange('gstinNumber', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Company Email"
+                    value={settings.companyEmail}
+                    onChange={(e) => handleInputChange('companyEmail', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="email"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Company Phone Number"
+                    value={settings.companyPhoneNumber}
+                    onChange={(e) => handleInputChange('companyPhoneNumber', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                    Social Network Links
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Facebook"
+                    value={settings.socialLinks.facebook}
+                    onChange={(e) => handleSocialLinkChange('facebook', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Twitter"
+                    value={settings.socialLinks.twitter}
+                    onChange={(e) => handleSocialLinkChange('twitter', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="YouTube"
+                    value={settings.socialLinks.youtube}
+                    onChange={(e) => handleSocialLinkChange('youtube', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Instagram"
+                    value={settings.socialLinks.instagram}
+                    onChange={(e) => handleSocialLinkChange('instagram', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="LinkedIn"
+                    value={settings.socialLinks.linkedin}
+                    onChange={(e) => handleSocialLinkChange('linkedin', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
               <Typography variant="h6" gutterBottom>
                 Selected Categories (max 4)
               </Typography>
@@ -423,226 +661,289 @@ const GeneralSettings = () => {
                   No categories selected. Use the search field above to add categories.
                 </Typography>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Company Information
-              </Typography>
-              
-              <TextField
-                fullWidth
-                label="Company Name"
-                value={settings.companyName}
-                onChange={(e) => handleInputChange('companyName', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-              
-              <TextField
-                fullWidth
-                label="Contact Details"
-                value={settings.contactDetails}
-                onChange={(e) => handleInputChange('contactDetails', e.target.value)}
-                margin="normal"
-                variant="outlined"
-                multiline
-                rows={4}
-              />
 
-              <TextField
-                fullWidth
-                label="Phone Number"
-                value={settings.phoneNumber}
-                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="GSTIN Number"
-                value={settings.gstinNumber}
-                onChange={(e) => handleInputChange('gstinNumber', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="Company Email"
-                value={settings.companyEmail}
-                onChange={(e) => handleInputChange('companyEmail', e.target.value)}
-                margin="normal"
-                variant="outlined"
-                type="email"
-              />
-
-              <TextField
-                fullWidth
-                label="Company Phone Number"
-                value={settings.companyPhoneNumber}
-                onChange={(e) => handleInputChange('companyPhoneNumber', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-
-              <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-                Social Network Links
-              </Typography>
-              
-              <TextField
-                fullWidth
-                label="Facebook"
-                value={settings.socialLinks.facebook}
-                onChange={(e) => handleSocialLinkChange('facebook', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-              
-              <TextField
-                fullWidth
-                label="Twitter"
-                value={settings.socialLinks.twitter}
-                onChange={(e) => handleSocialLinkChange('twitter', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="YouTube"
-                value={settings.socialLinks.youtube}
-                onChange={(e) => handleSocialLinkChange('youtube', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="Instagram"
-                value={settings.socialLinks.instagram}
-                onChange={(e) => handleSocialLinkChange('instagram', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-              
-              <TextField
-                fullWidth
-                label="LinkedIn"
-                value={settings.socialLinks.linkedin}
-                onChange={(e) => handleSocialLinkChange('linkedin', e.target.value)}
-                margin="normal"
-                variant="outlined"
-              />
-              
-              <Button
-                variant="contained"
-                onClick={handleSaveSettings}
-                disabled={loading}
-                sx={{ mt: 3 }}
-              >
-                Save Settings
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Logo Management
-              </Typography>
-              
-              <Box sx={{ mt: 2 }}>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="logo-upload"
-                  type="file"
-                  onChange={handleLogoFileChange}
-                />
-                <label htmlFor="logo-upload">
-                  <Button 
-                    variant="outlined" 
-                    component="span"
-                    disabled={loading}
-                  >
-                    {newLogo ? newLogo.name : 'Select Logo'}
-                  </Button>
-                </label>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <Button
                   variant="contained"
-                  onClick={handleUploadLogo}
-                  disabled={loading || !newLogo}
-                  sx={{ ml: 2 }}
+                  onClick={handleSaveGeneral}
+                  disabled={loading}
+                  size="large"
+                  startIcon={<SaveIcon />}
                 >
-                  Upload Logo
+                  Save General Settings
                 </Button>
               </Box>
-              
-              {logos.length > 0 ? (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Uploaded Logos
-                  </Typography>
-                  
-                  <Paper elevation={2} sx={{ p: 2 }}>
-                    <List>
-                      {logos.map((logo) => (
-                        <ListItem
-                          key={logo.id}
-                          sx={{
-                            mb: 1,
-                            bgcolor: 'grey.50',
-                            borderRadius: 1,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          <img 
-                            src={logo.file_path} 
-                            alt={logo.name}
-                            style={{ 
-                              width: 60, 
-                              height: 40, 
-                              objectFit: 'cover', 
-                              marginRight: 16,
-                              borderRadius: 4 
-                            }}
-                          />
-                          <ListItemText
-                            primary={logo.name}
-                            secondary={`Path: ${logo.file_path}`}
-                          />
-                          <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
-                              aria-label="delete"
-                              onClick={() => handleDeleteLogo(logo.id)}
-                              disabled={loading}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Paper>
-                </>
-              ) : (
-                <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-                  No logos uploaded yet.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
+
+        {/* Logo Management Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Logo Management</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Grid container spacing={2} sx={{ mt: 2 }}>
+                    <Grid item>
+                      <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="logo-upload"
+                        type="file"
+                        onChange={handleLogoFileChange}
+                      />
+                      <label htmlFor="logo-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          disabled={loading}
+                          startIcon={<CloudUploadIcon />}
+                        >
+                          {newLogo ? newLogo.name : 'Select Logo'}
+                        </Button>
+                      </label>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        variant="contained"
+                        onClick={handleUploadLogo}
+                        disabled={loading || !newLogo}
+                        startIcon={<SaveIcon />}
+                      >
+                        Upload Logo
+                      </Button>
+                    </Grid>
+                  </Grid>
+
+                  {logos.length > 0 ? (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Uploaded Logos
+                      </Typography>
+
+                      <Paper elevation={2} sx={{ p: 2 }}>
+                        <List>
+                          {logos.map((logo) => (
+                            <ListItem
+                              key={logo.id}
+                              sx={{
+                                mb: 1,
+                                bgcolor: 'grey.50',
+                                borderRadius: 1,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                              }}
+                            >
+                              <img
+                                src={logo.file_path}
+                                alt={logo.name}
+                                style={{
+                                  width: 60,
+                                  height: 40,
+                                  objectFit: 'cover',
+                                  marginRight: 16,
+                                  borderRadius: 4
+                                }}
+                              />
+                              <ListItemText
+                                primary={logo.name}
+                                secondary={`Path: ${logo.file_path}`}
+                              />
+                              <ListItemSecondaryAction>
+                                <IconButton
+                                  edge="end"
+                                  aria-label="delete"
+                                  onClick={() => handleDeleteLogo(logo.id)}
+                                  disabled={loading}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </ListItemSecondaryAction>
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Paper>
+                    </>
+                  ) : (
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+                      No logos uploaded yet.
+                    </Typography>
+                  )}
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Color Management Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Color Management</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Primary Color"
+                    value={settings.primaryColor}
+                    onChange={(e) => handleInputChange('primaryColor', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="color"
+                    inputProps={{
+                      style: {
+                        width: '200px',
+                        height: '56px',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Secondary Color"
+                    value={settings.secondaryColor}
+                    onChange={(e) => handleInputChange('secondaryColor', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="color"
+                    inputProps={{
+                      style: {
+                        width: '200px',
+                        height: '56px',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Background Image URL"
+                    value={settings.backgroundImage}
+                    onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <Grid container spacing={2} sx={{ mt: 2 }}>
+                    <Grid item>
+                      <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="background-image-upload"
+                        type="file"
+                        onChange={handleBackgroundImageFileChange}
+                      />
+                      <label htmlFor="background-image-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          disabled={loading}
+                          startIcon={<CloudUploadIcon />}
+                        >
+                          {backgroundImageFile ? backgroundImageFile.name : 'Select Background Image'}
+                        </Button>
+                      </label>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        variant="contained"
+                        onClick={handleUploadBackgroundImage}
+                        disabled={loading || !backgroundImageFile}
+                        startIcon={<SaveIcon />}
+                      >
+                        Upload Background Image
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveColorManagement}
+                  disabled={loading}
+                  size="large"
+                  startIcon={<SaveIcon />}
+                >
+                  Save Color Management Settings
+                </Button>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Application Settings Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Application Settings</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Minimum Order Value"
+                    value={settings.minimumOrderValue}
+                    onChange={(e) => handleInputChange('minimumOrderValue', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="number"
+                    placeholder="100.00"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Abandoned Cart Expiry (Hours)"
+                    value={settings.abandonedCartExpiryHours}
+                    onChange={(e) => handleInputChange('abandonedCartExpiryHours', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="number"
+                    placeholder="24"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Low Stock Quantity"
+                    value={settings.lowStockQuantity}
+                    onChange={(e) => handleInputChange('lowStockQuantity', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="number"
+                    placeholder="10"
+                  />
+                </Grid>
+              </Grid>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveApplicationSettings}
+                  disabled={loading}
+                  size="large"
+                  startIcon={<SaveIcon />}
+                >
+                  Save Application Settings
+                </Button>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+
       </Grid>
 
       <Snackbar

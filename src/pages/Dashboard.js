@@ -215,8 +215,8 @@ function Dashboard() {
             mb: 5,
             width: '100%',
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: 'white',
+        background: 'linear-gradient(135deg, #E7BE4C, #C69C4B)',
+            color: 'black',
             boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2), 0 4px 6px -2px rgba(99, 102, 241, 0.1)',
             position: 'relative',
             overflow: 'hidden',
@@ -251,7 +251,7 @@ function Dashboard() {
               title="Total Orders"
               value={stats.orders.toLocaleString()}
               icon={<OrderIcon sx={{ color: '#fff' }} />}
-              color="#6366f1"
+              color="#E7BE4C"
               onClick={() => handleCardClick('/orders')}
             />
           </Grid>
@@ -269,7 +269,7 @@ function Dashboard() {
               title="Total Users"
               value={stats.users.toLocaleString()}
               icon={<UserIcon sx={{ color: '#fff' }} />}
-              color="#8b5cf6"
+              color="#C69C4B"
               onClick={() => handleCardClick('/users')}
             />
           </Grid>
@@ -281,14 +281,14 @@ function Dashboard() {
         <Grid item xs={12} md={6}>
           <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
             <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent)' }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#6366f1' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#E7BE4C' }}>
                 Orders Awaiting Confirmation
               </Typography>
               <Button
                 size="small"
                 endIcon={<ArrowForward />}
                 onClick={() => handleCardClick('/orders')}
-                sx={{ color: '#6366f1', '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.08)' } }}
+                sx={{ color: '#E7BE4C', '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.08)' } }}
               >
                 View All
               </Button>
@@ -417,6 +417,72 @@ function Dashboard() {
           </Paper>
         </Grid>
 
+        {/* Popular Products */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, rgba(231, 190, 76, 0.05), transparent)' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#E7BE4C' }}>
+                Popular Products
+              </Typography>
+              <Button
+                size="small"
+                endIcon={<ArrowForward />}
+                onClick={() => handleCardClick('/products')}
+                sx={{ color: '#E7BE4C', '&:hover': { backgroundColor: 'rgba(231, 190, 76, 0.08)' } }}
+              >
+                View All
+              </Button>
+            </Box>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : (
+              <Box>
+                {popularProducts.length === 0 ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No popular products found.
+                    </Typography>
+                  </Box>
+                ) : (
+                  popularProducts.map((product) => (
+                    <Box
+                      key={product.id}
+                      sx={{
+                        p: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {product.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {product.category} • {product.sales} sales
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Chip
+                          label="View"
+                          size="small"
+                          onClick={() => handleCardClick(`/products/${product.id}`)}
+                          sx={{ cursor: 'pointer', bgcolor: '#E7BE4C', color: 'black', '&:hover': { bgcolor: '#C69C4B' } }}
+                        />
+                      </Box>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
         {/* Recent Sales */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
@@ -474,73 +540,6 @@ function Dashboard() {
                                                   {formatINR(sale.total_amount)}
                                                 </Typography>
                         <ArrowForward fontSize="small" sx={{ color: '#10b981', fontSize: 16 }} />
-                      </Box>
-                    </Box>
-                  ))
-                )}
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Popular Products */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ height: '100%', width: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent)' }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
-                Popular Products
-              </Typography>
-              <Button
-                size="small"
-                endIcon={<ArrowForward />}
-                onClick={() => handleCardClick('/products')}
-                sx={{ color: '#8b5cf6', '&:hover': { backgroundColor: 'rgba(139, 92, 246, 0.08)' } }}
-              >
-                View All
-              </Button>
-            </Box>
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress size={30} />
-              </Box>
-            ) : (
-              <Box>
-                {popularProducts.length === 0 ? (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No popular products found.
-                    </Typography>
-                  </Box>
-                ) : (
-                  popularProducts.map((product) => (
-                    <Box
-                      key={product.id}
-                      sx={{
-                        p: 2,
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        '&:hover': { bgcolor: 'action.hover' },
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {product.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {product.category} • {product.sales} sales
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Chip
-                          label="View"
-                          size="small"
-                          color="primary"
-                          onClick={() => handleCardClick(`/products/${product.id}`)}
-                          sx={{ cursor: 'pointer', bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' } }}
-                        />
                       </Box>
                     </Box>
                   ))

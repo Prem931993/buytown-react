@@ -226,7 +226,44 @@ export const adminService = {
       return response.data;
     },
     update: async (id, productData) => {
-      const response = await adminApiClient.put(`/products/${id}`, productData);
+      let data = productData;
+      let headers = {};
+
+      // If productData contains images or is FormData, use FormData
+      if (productData instanceof FormData || (productData.images && productData.images.length > 0) || productData.images_to_remove || productData.image_updates) {
+        const formData = productData instanceof FormData ? productData : new FormData();
+
+        if (!(productData instanceof FormData)) {
+          // Append new images if provided
+          if (productData.images && productData.images.length > 0) {
+            productData.images.forEach((image, index) => {
+              formData.append('images', image);
+            });
+          }
+
+          // Append images to remove if provided
+          if (productData.images_to_remove && productData.images_to_remove.length > 0) {
+            formData.append('images_to_remove', JSON.stringify(productData.images_to_remove));
+          }
+
+          // Append image updates (for reordering/setting primary) if provided
+          if (productData.image_updates) {
+            formData.append('image_updates', JSON.stringify(productData.image_updates));
+          }
+
+          // Append other product data
+          Object.keys(productData).forEach(key => {
+            if (key !== 'images' && key !== 'images_to_remove' && key !== 'image_updates' && productData[key] !== null && productData[key] !== undefined) {
+              formData.append(key, productData[key]);
+            }
+          });
+        }
+
+        data = formData;
+        headers = { 'Content-Type': 'multipart/form-data' };
+      }
+
+      const response = await adminApiClient.put(`/products/${id}`, data, { headers });
       return response.data;
     },
     delete: async (id) => {
@@ -235,6 +272,31 @@ export const adminService = {
     },
     deleteImage: async (imageId) => {
       const response = await adminApiClient.delete(`/products/image/${imageId}`);
+      return response.data;
+    },
+    updateImages: async (id, imageData) => {
+      const formData = new FormData();
+
+      // Append new images if provided
+      if (imageData.images && imageData.images.length > 0) {
+        imageData.images.forEach((image, index) => {
+          formData.append('images', image);
+        });
+      }
+
+      // Append images to remove if provided
+      if (imageData.images_to_remove && imageData.images_to_remove.length > 0) {
+        formData.append('images_to_remove', JSON.stringify(imageData.images_to_remove));
+      }
+
+      // Append image updates (for reordering/setting primary) if provided
+      if (imageData.image_updates) {
+        formData.append('image_updates', JSON.stringify(imageData.image_updates));
+      }
+
+      const response = await adminApiClient.put(`/products/${id}/images`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       return response.data;
     },
     import: async (file) => {
@@ -459,6 +521,13 @@ export const adminService = {
       const response = await adminApiClient.delete(`/vehicles/${id}`);
       return response.data;
     },
+    calculateDeliveryCharge: async (vehicleId, distanceKm) => {
+      const response = await adminApiClient.post('/vehicles/calculate-charge', {
+        vehicleId,
+        distanceKm
+      });
+      return response.data;
+    },
   },
 
   // Delivery operations
@@ -640,9 +709,10 @@ export const adminService = {
       return response.data;
     },
     // Calculate delivery charges
-    calculateDeliveryCharge: async (orderId, vehicleId) => {
+    calculateDeliveryCharge: async (orderId, vehicleId, deliveryDistance) => {
       const response = await adminApiClient.post(`/orders/${orderId}/calculate-delivery-charge`, {
-        vehicle_id: vehicleId
+        vehicle_id: vehicleId,
+        delivery_distance: deliveryDistance
       });
       return response.data;
     },

@@ -26,6 +26,7 @@ import DeliverySettings from './pages/DeliverySettings';
 import Brands from './pages/Brands';
 import Variations from './pages/Variations';
 import Layout from './components/Layout';
+import LoadingSpinner from './components/LoadingSpinner';
 import BannerUpload from './pages/BannerUpload';
 import GeneralSettings from './pages/GeneralSettings';
 import SMSConfiguration from './pages/SMSConfiguration';
@@ -42,10 +43,10 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#6366f1',
-      light: '#818cf8',
-      dark: '#4f46e5',
-      contrastText: '#ffffff',
+      main: '#E7BE4C',
+      light: '#E8C96D',
+      dark: '#C69C4B',
+      contrastText: '#000000',
     },
     secondary: {
       main: '#f59e0b',
@@ -176,7 +177,7 @@ const PrivateRoute = ({ children }) => {
 
   // Don't redirect while still loading
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner message="Loading..." />;
   }
 
   return isAuthenticated ? children : <Navigate to="/login" />;

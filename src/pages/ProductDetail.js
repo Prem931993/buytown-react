@@ -488,9 +488,9 @@ function ProductDetail() {
               onClick={handleSubmit}
               disabled={loading}
               sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                  background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
                 },
               }}
             >
@@ -618,6 +618,8 @@ function ProductDetail() {
                           borderRadius: 1,
                           minHeight: 120,
                           p: 2,
+                          display: 'flex',
+                          flexDirection: 'column',
                           '&:focus-within': {
                             borderColor: 'primary.main',
                             boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)',
@@ -627,8 +629,9 @@ function ProductDetail() {
                         <EditorContent
                           editor={editor}
                           style={{
-                            minHeight: 100,
+                            flex: 1,
                             outline: 'none',
+                            minHeight: 0,
                           }}
                         />
                       </Paper>
@@ -1120,10 +1123,16 @@ function ProductDetail() {
                   />
                   <label htmlFor="image-upload">
                     <Button
-                      variant="outlined"
+                      variant="contained"
                       component="span"
                       startIcon={<CloudUploadIcon />}
                       fullWidth
+                      sx={{
+                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                        },
+                      }}
                     >
                       Select Images
                     </Button>

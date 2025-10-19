@@ -391,10 +391,10 @@ function Categories() {
             variant="outlined"
             onClick={() => setImportDialogOpen(true)}
             sx={{
-              borderColor: '#6366f1',
-              color: '#6366f1',
+              borderColor: '#E7BE4C',
+              color: '#E7BE4C',
               '&:hover': {
-                borderColor: '#5254cc',
+                borderColor: '#C69C4B',
                 backgroundColor: 'rgba(99, 102, 241, 0.08)',
               },
             }}
@@ -406,9 +406,9 @@ function Categories() {
             startIcon={<AddIcon />}
             onClick={() => handleOpenForm()}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                background: 'linear-gradient(135deg, #D4A73F 0%, #B5893E 100%)',
               },
             }}
           >
@@ -499,9 +499,9 @@ function Categories() {
             variant="contained"
             disabled={!importFile || importLoading}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                background: 'linear-gradient(135deg, #D4A73F 0%, #B5893E 100%)',
               },
             }}
           >
@@ -789,9 +789,9 @@ function Categories() {
             onClick={handleSaveCategory}
             variant="contained"
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                background: 'linear-gradient(135deg, #D4A73F 0%, #B5893E 100%)',
               },
             }}
           >

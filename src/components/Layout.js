@@ -60,18 +60,6 @@ const menuItems = [
     badge: null
   },
   {
-    text: 'Products',
-    icon: <Store />,
-    path: null,
-    badge: null,
-    children: [
-      { text: 'All Products', path: '/products', icon: <Inventory /> },
-      { text: 'Categories', path: '/categories', icon: <CategoryIcon /> },
-      { text: 'Brands', path: '/brands', icon: <Business /> },
-      { text: 'Variations', path: '/variations', icon: <Tune /> }
-    ]
-  },
-  {
     text: 'Orders',
     icon: <ShoppingCart />,
     path: null,
@@ -88,10 +76,16 @@ const menuItems = [
     badge: null
   },
   {
-    text: 'Reports & Analytics',
-    icon: <Assessment />,
-    path: '/reports',
-    badge: null
+    text: 'Products',
+    icon: <Store />,
+    path: null,
+    badge: null,
+    children: [
+      { text: 'All Products', path: '/products', icon: <Inventory /> },
+      { text: 'Categories', path: '/categories', icon: <CategoryIcon /> },
+      { text: 'Brands', path: '/brands', icon: <Business /> },
+      { text: 'Variations', path: '/variations', icon: <Tune /> }
+    ]
   },
   {
     text: 'Content',
@@ -117,6 +111,12 @@ const menuItems = [
       { text: 'SMS Configuration', path: '/sms', icon: <Sms /> },
       { text: 'Email Configuration', path: '/email', icon: <Email /> }
     ]
+  },
+  {
+    text: 'Reports & Analytics',
+    icon: <Assessment />,
+    path: '/reports',
+    badge: null
   }
 ];
 
@@ -169,7 +169,6 @@ function Layout() {
   const fetchNotifications = async () => {
     try {
       const response = await adminService.notifications.getNotifications({ limit: 20 });
-      console.log("notifications", response.data);
       setNotifications(response.data.notifications || []);
 
       // Fetch unread count
@@ -216,8 +215,8 @@ function Layout() {
       <Box
         sx={{
           p: drawerCollapsed ? 1 : 3,
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-          color: 'white',
+          background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+          color: 'black',
           display: 'flex',
           alignItems: 'center',
           justifyContent: drawerCollapsed ? 'center' : 'space-between',
@@ -259,7 +258,7 @@ function Layout() {
         )}
         <IconButton
           onClick={() => setDrawerCollapsed(!drawerCollapsed)}
-          sx={{ color: 'white' }}
+          sx={{ color: 'black' }}
         >
           {drawerCollapsed ? <ChevronRight /> : <ChevronLeft />}
         </IconButton>
@@ -294,20 +293,20 @@ function Layout() {
                       borderRadius: 2,
                       justifyContent: drawerCollapsed ? 'center' : 'flex-start',
                       '&.Mui-selected': {
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                        color: 'white',
+                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                        color: 'black',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                          background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
                         },
                       },
                       '&:hover': {
-                        background: isActive ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' : 'rgba(99, 102, 241, 0.08)',
+                        background: isActive ? 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)' : 'rgba(231, 190, 76, 0.08)',
                       },
                     }}
                   >
                     <ListItemIcon
                       sx={{
-                        color: isActive ? 'white' : 'inherit',
+                        color: isActive ? 'black' : 'inherit',
                         minWidth: drawerCollapsed ? 0 : 40,
                       }}
                     >
@@ -325,7 +324,7 @@ function Layout() {
                           <IconButton
                             size="small"
                             sx={{
-                              color: isActive ? 'white' : 'inherit',
+                              color: isActive ? 'black' : 'inherit',
                               p: 0.5,
                               ml: 'auto',
                               transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -368,7 +367,7 @@ function Layout() {
                                 borderRadius: 2,
                                 '&.Mui-selected': {
                                   background: 'rgba(99, 102, 241, 0.1)',
-                                  color: '#6366f1',
+                                  color: '#E7BE4C',
                                 },
                                 '&:hover': {
                                   background: isChildActive ? 'rgba(99, 102, 241, 0.1)' : 'rgba(0, 0, 0, 0.04)',
@@ -414,7 +413,7 @@ function Layout() {
                                       borderRadius: 2,
                                       '&.Mui-selected': {
                                         background: 'rgba(99, 102, 241, 0.08)',
-                                        color: '#6366f1',
+                                        color: '#E7BE4C',
                                       },
                                       '&:hover': {
                                         background: location.pathname === subChild.path ? 'rgba(99, 102, 241, 0.08)' : 'rgba(0, 0, 0, 0.04)',
@@ -451,7 +450,7 @@ function Layout() {
             sx={{
               width: 40,
               height: 40,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
               mr: drawerCollapsed ? 0 : 2,
             }}
           >
@@ -700,7 +699,7 @@ function Layout() {
                   sx={{
                     width: 32,
                     height: 32,
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
                     mr: 2,
                   }}
                 >

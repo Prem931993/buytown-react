@@ -60,7 +60,7 @@ function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -105,8 +105,8 @@ function Login() {
               justifyContent: 'center',
               mx: 'auto',
               mb: 2,
-              boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.5)',
-              border: '2px solid rgba(99, 102, 241, 0.2)',
+              boxShadow: '0 10px 25px -5px rgba(231, 190, 76, 0.5)',
+              border: '2px solid rgba(231, 190, 76, 0.2)',
               position: 'relative',
               '&::before': {
                 content: '""',
@@ -116,7 +116,7 @@ function Login() {
                 right: 0,
                 bottom: 0,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                background: 'linear-gradient(135deg, rgba(231, 190, 76, 0.1) 0%, rgba(198, 156, 75, 0.1) 100%)',
                 zIndex: 0
               }
             }}
@@ -224,11 +224,11 @@ function Login() {
               mb: 1,
               py: 1.5,
               borderRadius: 2,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.4)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+              boxShadow: '0 4px 14px 0 rgba(231, 190, 76, 0.4)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5b5ce6 0%, #7c3aed 100%)',
-                boxShadow: '0 6px 20px 0 rgba(99, 102, 241, 0.5)',
+                background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                boxShadow: '0 6px 20px 0 rgba(231, 190, 76, 0.5)',
               },
             }}
           >

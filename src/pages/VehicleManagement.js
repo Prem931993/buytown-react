@@ -43,7 +43,9 @@ function VehicleManagement() {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formData, setFormData] = useState({
     vehicle_type: '',
-    rate_per_km: '',
+    base_charge: '',
+    max_distance_km: '',
+    additional_charge_per_km: '',
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -168,7 +170,9 @@ function VehicleManagement() {
     setEditingVehicle(vehicle);
     setFormData({
       vehicle_type: vehicle.vehicle_type || '',
-      rate_per_km: vehicle.rate_per_km || '',
+      base_charge: vehicle.base_charge !== null && vehicle.base_charge !== undefined ? vehicle.base_charge : 0,
+      max_distance_km: vehicle.max_distance_km !== null && vehicle.max_distance_km !== undefined ? vehicle.max_distance_km : 5,
+      additional_charge_per_km: vehicle.additional_charge_per_km !== null && vehicle.additional_charge_per_km !== undefined ? vehicle.additional_charge_per_km : 0,
     });
     setOpen(true);
   };
@@ -178,7 +182,9 @@ function VehicleManagement() {
     setEditingVehicle(null);
     setFormData({
       vehicle_type: '',
-      rate_per_km: '',
+      base_charge: '',
+      max_distance_km: '',
+      additional_charge_per_km: '',
     });
     setOpen(true);
   };
@@ -189,7 +195,9 @@ function VehicleManagement() {
     setEditingVehicle(null);
     setFormData({
       vehicle_type: '',
-      rate_per_km: '',
+      base_charge: '',
+      max_distance_km: '',
+      additional_charge_per_km: '',
     });
   };
 
@@ -281,7 +289,7 @@ function VehicleManagement() {
                           {vehicle.vehicle_type}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          ₹{vehicle.rate_per_km}/km
+                          ₹{vehicle.base_charge || 0} base + ₹{vehicle.additional_charge_per_km || 0}/km after {vehicle.max_distance_km || 5}km
                         </Typography>
                       </Box>
                     </Box>
@@ -358,14 +366,38 @@ function VehicleManagement() {
                 required
               />
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Base Charge (₹)"
+                type="number"
+                value={formData.base_charge}
+                onChange={(e) => handleInputChange('base_charge', e.target.value)}
+                placeholder="e.g., 50.00"
+                required
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Max Distance (km)"
+                type="number"
+                value={formData.max_distance_km}
+                onChange={(e) => handleInputChange('max_distance_km', e.target.value)}
+                placeholder="e.g., 5"
+                required
+                inputProps={{ min: 1, step: 1 }}
+              />
+            </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Delivery Charge (₹/km)"
+                label="Additional Charge per km (₹)"
                 type="number"
-                value={formData.rate_per_km}
-                onChange={(e) => handleInputChange('rate_per_km', e.target.value)}
-                placeholder="e.g., 15.00"
+                value={formData.additional_charge_per_km}
+                onChange={(e) => handleInputChange('additional_charge_per_km', e.target.value)}
+                placeholder="e.g., 10.00"
                 required
                 inputProps={{ min: 0, step: 0.01 }}
               />
@@ -378,7 +410,7 @@ function VehicleManagement() {
             onClick={handleSubmit}
             variant="contained"
             color="primary"
-            disabled={!formData.vehicle_type || !formData.rate_per_km}
+            disabled={!formData.vehicle_type || !formData.base_charge || !formData.max_distance_km || !formData.additional_charge_per_km}
           >
             {editingVehicle ? 'Update' : 'Create'}
           </Button>

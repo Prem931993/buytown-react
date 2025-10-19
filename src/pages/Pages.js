@@ -179,8 +179,8 @@ function Pages() {
 
   const getAvatarColor = (id) => {
     const colors = [
-      '#6366f1', // indigo
-      '#8b5cf6', // violet
+      '#E7BE4C', // indigo
+      '#C69C4B', // violet
       '#ec4899', // pink
       '#f59e0b', // amber
       '#10b981', // emerald
@@ -210,9 +210,9 @@ function Pages() {
           startIcon={<AddIcon />}
           onClick={handleAddPage}
           sx={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
             '&:hover': {
-              background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+              background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
             },
           }}
         >

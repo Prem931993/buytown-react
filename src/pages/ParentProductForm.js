@@ -357,9 +357,9 @@ function ParentProductForm() {
               onClick={handleSubmit}
               disabled={loading}
               sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                  background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
                 },
               }}
             >

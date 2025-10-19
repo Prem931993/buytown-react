@@ -41,6 +41,7 @@ import {
 } from '@mui/icons-material';
 import { adminApiClient } from '../services/adminService';
 import adminService from '../services/adminService';
+import ImageUploadModal from '../components/ImageUploadModal';
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -53,6 +54,8 @@ function Products() {
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
+  const [imageUploadModalOpen, setImageUploadModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // State for search and filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -299,6 +302,21 @@ function Products() {
     });
   };
 
+  const handleImageClick = (product) => {
+    setSelectedProduct(product);
+    setImageUploadModalOpen(true);
+  };
+
+  const handleCloseImageUploadModal = () => {
+    setImageUploadModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const handleImageUpdate = (productId, updatedImages) => {
+    // Refresh the entire products list to ensure consistency
+    fetchProducts();
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -327,9 +345,9 @@ function Products() {
             startIcon={<AddIcon />}
             onClick={handleAddProduct}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
               },
             }}
           >
@@ -351,7 +369,7 @@ function Products() {
           </Typography>
 
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <TextField
                   fullWidth
@@ -375,7 +393,7 @@ function Products() {
                       borderRadius: '8px',
                       '&:hover': {
                         '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366f1',
+                          borderColor: '#E7BE4C',
                         },
                       },
                     },
@@ -389,12 +407,12 @@ function Products() {
                   }}
                   sx={{
                     minWidth: '48px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
                     borderRadius: '8px',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+                      background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
                       transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+                      boxShadow: '0 4px 12px rgba(231, 190, 76, 0.4)',
                     },
                     transition: 'all 0.2s ease-in-out',
                   }}
@@ -404,7 +422,7 @@ function Products() {
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl
                 fullWidth
                 size="small"
@@ -415,7 +433,7 @@ function Products() {
                     borderRadius: '8px',
                     '&:hover': {
                       '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#6366f1',
+                        borderColor: '#E7BE4C',
                       },
                     },
                   },
@@ -447,7 +465,7 @@ function Products() {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
@@ -520,9 +538,10 @@ function Products() {
                       <TableCell>{product.id}</TableCell>
                       <TableCell>
                         <img
-                          src={product.images && product.images.length > 0 ? (product.images[0].image_path || `/products/${product.images[0].path?.split('/').pop()}`) : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjBmMGYwIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4='}
+                          src={product.images && product.images.length > 0 ? product.images[0].path : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjBmMGYwIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4='}
                           alt={product.name}
-                          style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                          style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px', cursor: 'pointer' }}
+                          onClick={() => handleImageClick(product)}
                           onError={(e) => {
                             if (!e.target.src.includes('data:image/svg+xml')) {
                               e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZjBmMGYwIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OTk5OTkiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4=';
@@ -652,6 +671,13 @@ function Products() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ImageUploadModal
+        open={imageUploadModalOpen}
+        onClose={handleCloseImageUploadModal}
+        product={selectedProduct}
+        onImageUpdate={handleImageUpdate}
+      />
     </Box>
   );
 }

@@ -338,7 +338,7 @@ function Users() {
       '#388e3c', // green
       '#d32f2f', // red
       '#f57c00', // orange
-      '#7b1fa2', // purple
+      '#E7BE4C', // gold
       '#0288d1', // light blue
       '#388e3c', // green
       '#fbc02d', // yellow
@@ -357,9 +357,9 @@ function Users() {
           startIcon={<AddIcon />}
           onClick={handleAddUser}
           sx={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            background: 'linear-gradient(90deg, #E7BE4C, #C69C4B)',
             '&:hover': {
-              background: 'linear-gradient(135deg, #5254cc 0%, #7a4fd3 100%)',
+              background: 'linear-gradient(90deg, #C69C4B, #E7BE4C)',
             },
           }}
         >
@@ -413,7 +413,7 @@ function Users() {
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+            <TableRow sx={{ backgroundColor: 'rgba(231, 190, 76, 0.08)' }}>
               <TableCell>User</TableCell>
               <TableCell>Contact</TableCell>
               <TableCell>Role</TableCell>
