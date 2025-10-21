@@ -419,7 +419,7 @@ function Variations() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {variations.map((variation) => (
+            {variations.length > 0 ? variations.map((variation) => (
               <TableRow key={variation.id}>
                 <TableCell>{variation.id}</TableCell>
                 <TableCell>
@@ -445,7 +445,34 @@ function Variations() {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <AddIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No Variations Found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Get started by adding your first variation
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenForm()}
+                      sx={{
+                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                        },
+                      }}
+                    >
+                      Add First Variation
+                    </Button>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
