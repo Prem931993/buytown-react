@@ -434,7 +434,7 @@ function Brands() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {brands.map((brand) => (
+            {brands.length > 0 ? brands.map((brand) => (
               <TableRow key={brand.id}>
                 <TableCell>{brand.id}</TableCell>
                 <TableCell>
@@ -445,10 +445,10 @@ function Brands() {
                 <TableCell>{brand.description}</TableCell>
                 <TableCell>
                   {brand.image ? (
-                    <img 
-                      src={brand.image} 
-                      alt={brand.name} 
-                      style={{ width: '50px', height: '50px', objectFit: 'contain' }} 
+                    <img
+                      src={brand.image}
+                      alt={brand.name}
+                      style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                     />
                   ) : (
                     'No image'
@@ -471,7 +471,34 @@ function Brands() {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <AddIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No Brands Found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Get started by adding your first brand
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenForm()}
+                      sx={{
+                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                        },
+                      }}
+                    >
+                      Add First Brand
+                    </Button>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

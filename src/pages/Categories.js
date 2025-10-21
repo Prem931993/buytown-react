@@ -523,7 +523,7 @@ function Categories() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {categories.map((category) => (
+            {categories.length > 0 ? categories.map((category) => (
               <React.Fragment key={category.id}>
                 <TableRow>
                   <TableCell>{category.id}</TableCell>
@@ -650,7 +650,34 @@ function Categories() {
                   </TableCell>
                 </TableRow>
               </React.Fragment>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <CategoryIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No Categories Found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Get started by adding your first category
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenForm()}
+                      sx={{
+                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #D4A73F 0%, #B5893E 100%)',
+                        },
+                      }}
+                    >
+                      Add First Category
+                    </Button>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

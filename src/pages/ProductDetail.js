@@ -535,6 +535,124 @@ function ProductDetail() {
                       value={formData.hsn_code}
                       onChange={handleInputChange}
                     />
+                   {/* Product Images Section */}
+                    <Box>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
+                        Product Images
+                      </Typography>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        style={{ display: 'none' }}
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload">
+                        <Button
+                          variant="contained"
+                          component="span"
+                          startIcon={<CloudUploadIcon />}
+                          fullWidth
+                          sx={{
+                            background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                            },
+                          }}
+                        >
+                          Select Images
+                        </Button>
+                      </label>
+                      
+                      {/* Preview of new images */}
+                      {newImages.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Selected Images ({newImages.length})
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {newImages.map((image, index) => (
+                              <Grid item xs={12} key={index}>
+                                <Card>
+                                  <Box sx={{ position: 'relative' }}>
+                                    <img
+                                      src={URL.createObjectURL(image)}
+                                      alt={`Preview ${index}`}
+                                      style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                                    />
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => removeImage(index)}
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        '&:hover': {
+                                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        }
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                  <CardContent>
+                                    <Typography variant="body2" noWrap>
+                                      {image.name}
+                                    </Typography>
+                                  </CardContent>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      )}
+                      
+                      {/* Preview of existing images */}
+                      {productImages.length > 0 && (
+                        <Box sx={{ mt: 3 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Existing Images ({productImages.length})
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {productImages.map((image, index) => (
+                              <Grid item xs={12} key={image.id || index}>
+                                <Card>
+                                  <Box sx={{ position: 'relative' }}>
+                                    <img
+                                      src={image.image_path || `/products/${image.path?.split('/').pop()}`}
+                                      alt={`Product ${index}`}
+                                      style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                                    />
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => removeExistingImage(image.id)}
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        '&:hover': {
+                                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        }
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                  <CardContent>
+                                    <Typography variant="body2" noWrap>
+                                      {image.path?.split('/').pop() || 'Image'}
+                                    </Typography>
+                                  </CardContent>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      )}
+                    </Box>
                     <Box>
                       <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                         Description
@@ -1106,125 +1224,6 @@ function ProductDetail() {
                       onChange={handleInputChange}
                     />
                   </Box>
-                </Box>
-                
-                {/* Product Images Section */}
-                <Box>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 2 }}>
-                    Product Images
-                  </Typography>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                    id="image-upload"
-                  />
-                  <label htmlFor="image-upload">
-                    <Button
-                      variant="contained"
-                      component="span"
-                      startIcon={<CloudUploadIcon />}
-                      fullWidth
-                      sx={{
-                        background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
-                        },
-                      }}
-                    >
-                      Select Images
-                    </Button>
-                  </label>
-                  
-                  {/* Preview of new images */}
-                  {newImages.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Selected Images ({newImages.length})
-                      </Typography>
-                      <Grid container spacing={2}>
-                        {newImages.map((image, index) => (
-                          <Grid item xs={12} key={index}>
-                            <Card>
-                              <Box sx={{ position: 'relative' }}>
-                                <img
-                                  src={URL.createObjectURL(image)}
-                                  alt={`Preview ${index}`}
-                                  style={{ width: '100%', height: '150px', objectFit: 'cover' }}
-                                />
-                                <IconButton
-                                  size="small"
-                                  onClick={() => removeImage(index)}
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    right: 4,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                                    '&:hover': {
-                                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                    }
-                                  }}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
-                              <CardContent>
-                                <Typography variant="body2" noWrap>
-                                  {image.name}
-                                </Typography>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </Box>
-                  )}
-                  
-                  {/* Preview of existing images */}
-                  {productImages.length > 0 && (
-                    <Box sx={{ mt: 3 }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Existing Images ({productImages.length})
-                      </Typography>
-                      <Grid container spacing={2}>
-                        {productImages.map((image, index) => (
-                          <Grid item xs={12} key={image.id || index}>
-                            <Card>
-                              <Box sx={{ position: 'relative' }}>
-                                <img
-                                  src={image.image_path || `/products/${image.path?.split('/').pop()}`}
-                                  alt={`Product ${index}`}
-                                  style={{ width: '100%', height: '150px', objectFit: 'cover' }}
-                                />
-                                <IconButton
-                                  size="small"
-                                  onClick={() => removeExistingImage(image.id)}
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    right: 4,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                                    '&:hover': {
-                                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                    }
-                                  }}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
-                              <CardContent>
-                                <Typography variant="body2" noWrap>
-                                  {image.path?.split('/').pop() || 'Image'}
-                                </Typography>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </Box>
-                  )}
                 </Box>
               </Box>
             </CardContent>

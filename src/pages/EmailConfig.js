@@ -66,6 +66,7 @@ function EmailConfig() {
     mail_refresh_token: '',
     mail_access_token: '',
     token_expires_at: '',
+    sendgrid_api_key: '',
     enabled: true
   });
 
@@ -132,6 +133,7 @@ function EmailConfig() {
         mail_refresh_token: '',
         mail_access_token: '',
         token_expires_at: '',
+        sendgrid_api_key: '',
         enabled: true
       });
       fetchEmailConfigs();
@@ -363,6 +365,17 @@ function EmailConfig() {
                           </Box>
                         </Box>
                       </MenuItem>
+                      <MenuItem value="sendgrid">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 24, height: 24, bgcolor: 'warning.main' }}>
+                            <EmailIcon sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">Sendgrid</Typography>
+                            <Typography variant="caption" color="text.secondary">Sendgrid email service</Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -509,6 +522,24 @@ function EmailConfig() {
                   </>
                 )}
 
+                {formData.config_type === 'sendgrid' && (
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Sendgrid API Key"
+                        name="sendgrid_api_key"
+                        type="password"
+                        value={formData.sendgrid_api_key}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Your Sendgrid API Key"
+                        size="small"
+                      />
+                    </Grid>
+                  </>
+                )}
+
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button
@@ -560,7 +591,8 @@ function EmailConfig() {
                 <TableCell>
                   <Chip
                     label={config.config_type === 'gmail_app_password' ? 'Gmail App Password' :
-                           config.config_type === 'oauth2' ? 'OAuth2' : 'SMTP'}
+                           config.config_type === 'oauth2' ? 'OAuth2' :
+                           config.config_type === 'sendgrid' ? 'Sendgrid' : 'SMTP'}
                     size="small"
                     color="primary"
                   />

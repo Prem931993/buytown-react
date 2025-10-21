@@ -1007,7 +1007,7 @@ function UserDetail() {
                             }
                             return selected.map(id => {
                               const vehicle = availableVehicles.find(v => v.id === id);
-                              return vehicle ? `${vehicle.vehicle_type}${vehicle.vehicle_number ? ` (${vehicle.vehicle_number})` : ''} - ₹${vehicle.rate_per_km}/km` : `Vehicle ${id}`;
+                              return vehicle ? `${vehicle.vehicle_type}${vehicle.vehicle_number ? ` (${vehicle.vehicle_number})` : ''} - ₹${vehicle.additional_charge_per_km}/km` : `Vehicle ${id}`;
                             }).join(', ');
                           }}
                         >
@@ -1023,7 +1023,7 @@ function UserDetail() {
                                   )}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  ₹{vehicle.rate_per_km}/km
+                                  ₹{vehicle.additional_charge_per_km}/km
                                 </Typography>
                               </Box>
                             </MenuItem>
@@ -1072,7 +1072,7 @@ function UserDetail() {
                                         minHeight: 56,
                                       }
                                     }}
-                                    helperText={`₹${vehicle.rate_per_km}/km`}
+                                    helperText={`₹${vehicle.additional_charge_per_km}/km`}
                                   />
                                 </Grid>
                               ) : null;
@@ -1119,7 +1119,7 @@ function UserDetail() {
                                     </Typography>
                                   )}
                                   <Typography variant="caption" color="text.secondary">
-                                    ₹{vehicle.rate_per_km}/km
+                                    ₹{vehicle.additional_charge_per_km}/km
                                   </Typography>
                                 </Box>
                               ) : null;
