@@ -42,6 +42,7 @@ import {
   ThumbUp,
   ThumbDown,
   Person,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 
 
@@ -65,7 +66,13 @@ function Orders() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [deliveryPersonId, setDeliveryPersonId] = useState('');
   const [deliveryDistance, setDeliveryDistance] = useState('');
+  const [vehicleTypeId, setVehicleTypeId] = useState('');
   const [deliveryPersons, setDeliveryPersons] = useState([]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [calculatedDeliveryCharges, setCalculatedDeliveryCharges] = useState(0);
+  const [ongoingOrders, setOngoingOrders] = useState(0);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [orderItems, setOrderItems] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
 
@@ -121,9 +128,26 @@ function Orders() {
   };
 
   // Handle approve order
-  const handleApproveOrder = (order) => {
+  const handleApproveOrder = async (order) => {
     setSelectedOrderForAction(order);
+    setOrderTotal(order.total || 0);
     setOpenApproveDialog(true);
+    fetchVehicleTypes();
+
+    // Fetch order details to get delivery distance and items
+    try {
+      const response = await adminService.orders.getById(order.id);
+      if (response.order) {
+        if (response.order.deliveryDistance) {
+          setDeliveryDistance(response.order.deliveryDistance.toString());
+        }
+        if (response.order.items) {
+          setOrderItems(response.order.items);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+    }
   };
 
   // Handle reject order
@@ -150,16 +174,50 @@ function Orders() {
     }
   };
 
+  // Fetch delivery persons for a specific vehicle
+  const fetchDeliveryPersonsForVehicle = (vehicleId) => {
+    const selectedVehicle = vehicleTypes.find(vehicle => vehicle.id === vehicleId);
+    if (selectedVehicle && selectedVehicle.deliveryPersons) {
+      setDeliveryPersons(selectedVehicle.deliveryPersons);
+    } else {
+      setDeliveryPersons([]);
+    }
+  };
+
+  // Calculate delivery charges
+  const calculateDeliveryCharges = async (vehicleId, distance) => {
+    try {
+      const response = await adminService.orders.calculateDeliveryCharge(selectedOrderForAction.id, vehicleId, distance);
+      if (response.success) {
+        setCalculatedDeliveryCharges(response.delivery_charge || 0);
+      }
+    } catch (error) {
+      console.error('Error calculating delivery charges:', error);
+      setCalculatedDeliveryCharges(0);
+    }
+  };
+
+  // Fetch vehicle types
+  const fetchVehicleTypes = async () => {
+    try {
+      const response = await adminService.vehicles.getAll();
+      setVehicleTypes(response || []);
+    } catch (error) {
+      console.error('Error fetching vehicle types:', error);
+    }
+  };
+
   // Submit approve order
   const handleSubmitApprove = async () => {
     try {
-      const response = await adminService.orders.approve(selectedOrderForAction.id, deliveryPersonId, parseFloat(deliveryDistance));
+      const response = await adminService.orders.approve(selectedOrderForAction.id, vehicleTypeId, parseFloat(deliveryDistance), deliveryPersonId);
       if (response.success) {
         setSnackbar({ open: true, message: 'Order approved successfully!', severity: 'success' });
         setOpenApproveDialog(false);
         fetchOrders();
         setDeliveryPersonId('');
         setDeliveryDistance('');
+        setVehicleTypeId('');
       } else {
         setSnackbar({ open: true, message: response.error || 'Failed to approve order', severity: 'error' });
       }
@@ -208,6 +266,11 @@ function Orders() {
     setOpenApproveDialog(false);
     setDeliveryPersonId('');
     setDeliveryDistance('');
+    setVehicleTypeId('');
+    setOrderItems([]);
+    setOngoingOrders(0);
+    setCalculatedDeliveryCharges(0);
+    setOrderTotal(0);
   };
 
   const handleCloseRejectDialog = () => {
@@ -226,12 +289,52 @@ function Orders() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Handle invoice download
+  const handleDownloadInvoice = async (order) => {
+    try {
+      // Call generateInvoicePDF which returns the PDF blob directly
+      const blob = await adminService.orders.generateInvoicePDF(order.id);
+
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+
+        // Generate filename that matches backend
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `invoice_${order.order_number || order.id}_${timestamp}.pdf`;
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        setSnackbar({
+          open: true,
+          message: 'Invoice PDF downloaded successfully',
+          severity: 'success',
+        });
+      } else {
+        throw new Error('Failed to download invoice PDF');
+      }
+    } catch (error) {
+      console.error('Error downloading invoice PDF:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to download invoice PDF',
+        severity: 'error',
+      });
+    }
+  };
+
 
 
   // Filter orders based on search term and status filter
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       (order.id?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.order_number?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.customer?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
@@ -242,15 +345,23 @@ function Orders() {
   // Get status color based on status
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Delivered':
+      case 'delivered':
         return 'success';
-      case 'Shipped':
+      case 'completed':
+        return 'success';
+      case 'shipped':
         return 'info';
-      case 'Processing':
+      case 'processing':
         return 'warning';
-      case 'Pending':
+      case 'confirmed':
+        return 'primary';
+      case 'approved':
+        return 'primary';
+      case 'awaiting_confirmation':
         return 'secondary';
-      case 'Cancelled':
+      case 'rejected':
+        return 'error';
+      case 'cancelled':
         return 'error';
       default:
         return 'default';
@@ -260,15 +371,23 @@ function Orders() {
   // Get status icon based on status
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Delivered':
+      case 'delivered':
         return <CheckCircle fontSize="small" />;
-      case 'Shipped':
+      case 'completed':
+        return <CheckCircle fontSize="small" />;
+      case 'shipped':
         return <LocalShipping fontSize="small" />;
-      case 'Processing':
+      case 'processing':
         return <Refresh fontSize="small" />;
-      case 'Pending':
+      case 'confirmed':
+        return <ThumbUp fontSize="small" />;
+      case 'approved':
+        return <ThumbUp fontSize="small" />;
+      case 'awaiting_confirmation':
         return <ShoppingCart fontSize="small" />;
-      case 'Cancelled':
+      case 'rejected':
+        return <Cancel fontSize="small" />;
+      case 'cancelled':
         return <Cancel fontSize="small" />;
       default:
         return null;
@@ -307,11 +426,13 @@ function Orders() {
             onChange={handleStatusFilterChange}
           >
             <MenuItem value="All">All Statuses</MenuItem>
-            <MenuItem value="Pending">Pending</MenuItem>
-            <MenuItem value="Processing">Processing</MenuItem>
-            <MenuItem value="Shipped">Shipped</MenuItem>
-            <MenuItem value="Delivered">Delivered</MenuItem>
-            <MenuItem value="Cancelled">Cancelled</MenuItem>
+            <MenuItem value="awaiting_confirmation">Awaiting Confirmation</MenuItem>
+            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="confirmed">Confirmed</MenuItem>
+            <MenuItem value="rejected">Rejected</MenuItem>
+            <MenuItem value="cancelled">Cancelled</MenuItem>
+            <MenuItem value="completed">Completed</MenuItem>
+            <MenuItem value="delivered">Delivered</MenuItem>
           </Select>
         </FormControl>
 
@@ -336,13 +457,15 @@ function Orders() {
                 <TableCell>Total</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Items</TableCell>
+                <TableCell>Rejection Reason</TableCell>
+                <TableCell>Notes</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <CircularProgress size={40} />
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       Loading orders...
@@ -351,7 +474,7 @@ function Orders() {
                 </TableRow>
               ) : filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       No orders found
                     </Typography>
@@ -385,6 +508,16 @@ function Orders() {
                         />
                       </TableCell>
                       <TableCell>{order.items?.length || 0}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {order.rejection_reason || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {order.notes || 'N/A'}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -393,7 +526,16 @@ function Orders() {
                         >
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
-                        {order.status === 'Pending' && (
+                        {(order.status?.toLowerCase() === 'completed' || order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'approved') && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDownloadInvoice(order)}
+                            sx={{ color: 'secondary.main' }}
+                          >
+                            <ReceiptIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {order.status === 'awaiting_confirmation' && (
                           <>
                             <IconButton
                               size="small"
@@ -411,7 +553,7 @@ function Orders() {
                             </IconButton>
                           </>
                         )}
-                        {(order.status === 'Approved' || order.status === 'Processing') && (
+                        {(order.status === 'confirmed' || order.status === 'processing') && (
                           <IconButton
                             size="small"
                             onClick={() => handleAssignDeliveryPerson(order)}
@@ -453,16 +595,61 @@ function Orders() {
             Approve order #{selectedOrderForAction?.id}? This will change the order status to "Approved".
           </DialogContentText>
           <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="vehicle-type-label">Select Vehicle Type</InputLabel>
+            <Select
+              labelId="vehicle-type-label"
+              value={vehicleTypeId}
+              label="Select Vehicle Type"
+            onChange={(e) => {
+                const vehicleId = e.target.value;
+                setVehicleTypeId(vehicleId);
+                setDeliveryPersonId('');
+                setCalculatedDeliveryCharges(0);
+                setOngoingOrders(0);
+                // Fetch delivery persons for selected vehicle
+                if (vehicleId) {
+                  fetchDeliveryPersonsForVehicle(vehicleId);
+                  // Set ongoing orders from vehicle
+                  const selectedVehicle = vehicleTypes.find(vehicle => vehicle.id === vehicleId);
+                  if (selectedVehicle) {
+                    setOngoingOrders(selectedVehicle.ongoing_orders_count || 0);
+                  }
+                } else {
+                  setDeliveryPersons([]);
+                }
+              }}
+            >
+              {vehicleTypes.map((vehicle) => (
+                <MenuItem key={vehicle.id} value={vehicle.id}>
+                  {vehicle.vehicle_type}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel id="delivery-person-label">Assign Delivery Person</InputLabel>
             <Select
               labelId="delivery-person-label"
               value={deliveryPersonId}
               label="Assign Delivery Person"
-              onChange={(e) => setDeliveryPersonId(e.target.value)}
+              onChange={(e) => {
+                const personId = e.target.value;
+                setDeliveryPersonId(personId);
+                // Set ongoing orders from selected vehicle (same for all delivery persons in that vehicle)
+                const selectedVehicle = vehicleTypes.find(vehicle => vehicle.id === vehicleTypeId);
+                if (selectedVehicle) {
+                  setOngoingOrders(selectedVehicle.ongoing_orders_count || 0);
+                }
+                // Calculate delivery charges when delivery person is selected
+                if (personId && vehicleTypeId && deliveryDistance) {
+                  calculateDeliveryCharges(vehicleTypeId, deliveryDistance);
+                }
+              }}
+              disabled={!vehicleTypeId}
             >
               {deliveryPersons.map((person) => (
                 <MenuItem key={person.id} value={person.id}>
-                  {person.name} ({person.email})
+                  {person.name}
                 </MenuItem>
               ))}
             </Select>
@@ -472,9 +659,44 @@ function Orders() {
             label="Delivery Distance (km)"
             type="number"
             value={deliveryDistance}
-            onChange={(e) => setDeliveryDistance(e.target.value)}
+            onChange={(e) => {
+              const distance = e.target.value;
+              setDeliveryDistance(distance);
+              // Calculate delivery charges when distance changes
+              if (vehicleTypeId && deliveryPersonId && distance) {
+                calculateDeliveryCharges(vehicleTypeId, distance);
+              }
+            }}
             sx={{ mb: 2 }}
+            disabled
           />
+          {/* Order Summary */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
+              Order Summary
+            </Typography>
+            {orderItems.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Items:
+                </Typography>
+                {orderItems.map((item, index) => (
+                  <Typography key={index} variant="body2" sx={{ ml: 1, fontSize: '0.875rem' }}>
+                    • {item.name} (Qty: {item.quantity}) - ₹{item.price?.toFixed(2) || '0.00'}
+                  </Typography>
+                ))}
+              </Box>
+            )}
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Ongoing Orders:</strong> {ongoingOrders}
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Delivery Charges:</strong> ₹{calculatedDeliveryCharges.toFixed(2)}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Order Total:</strong> ₹{orderTotal.toFixed(2)}
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseApproveDialog}>Cancel</Button>
@@ -482,7 +704,7 @@ function Orders() {
             onClick={handleSubmitApprove}
             variant="contained"
             color="success"
-            disabled={!deliveryPersonId || !deliveryDistance}
+            disabled={!vehicleTypeId || !deliveryPersonId || !deliveryDistance}
           >
             Approve
           </Button>

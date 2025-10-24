@@ -84,6 +84,9 @@ function OrderDetail() {
     confirmation: false,
   });
 
+  // Ongoing orders state
+  const [ongoingOrders, setOngoingOrders] = useState(0);
+
   const calculateDeliveryCharges = useCallback(async (vehicleId, distance) => {
     if (!vehicleId || !distance || isNaN(distance) || Number(distance) <= 0) {
       setCalculatedDeliveryCharges(0);
@@ -223,6 +226,7 @@ function OrderDetail() {
       const selectedVehicleData = vehicles.find(v => v.id === vehicleId);
       if (selectedVehicleData && selectedVehicleData.deliveryPersons) {
         setDeliveryPersons(selectedVehicleData.deliveryPersons);
+        setOngoingOrders(selectedVehicleData.ongoing_orders_count || 0);
 
         // If delivery persons exist, preselect the first one and calculate charges
         if (selectedVehicleData.deliveryPersons.length > 0) {
@@ -241,11 +245,13 @@ function OrderDetail() {
         setDeliveryPersons([]);
         setSelectedDeliveryPerson('');
         setCalculatedDeliveryCharges(0);
+        setOngoingOrders(0);
       }
     } else {
       setDeliveryPersons([]);
       setSelectedDeliveryPerson('');
       setCalculatedDeliveryCharges(0);
+      setOngoingOrders(0);
     }
   };
 
@@ -614,6 +620,26 @@ function OrderDetail() {
                     <Typography variant="body2">Payment Status:</Typography>
                     <Chip label={orderDetails.paymentStatus || 'N/A'} size="small" color="success" />
                   </Box>
+                  {orderDetails.rejection_reason && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 500 }}>
+                        Rejection Reason:
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'error.main' }}>
+                        {orderDetails.rejection_reason}
+                      </Typography>
+                    </Box>
+                  )}
+                  {orderDetails.notes && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Notes:
+                      </Typography>
+                      <Typography variant="body2">
+                        {orderDetails.notes}
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -686,7 +712,7 @@ function OrderDetail() {
                   </Alert>
                 )}
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={12}>
+                  <Grid item xs={12} md={6}>
                     <FormControl sx={{ minWidth: 250 }}>
                       <InputLabel>Select Vehicle</InputLabel>
                       <Select
@@ -704,8 +730,13 @@ function OrderDetail() {
                         ))}
                       </Select>
                     </FormControl>
+                    {selectedVehicle && (
+                      <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                        Ongoing Orders: {ongoingOrders}
+                      </Typography>
+                    )}
                   </Grid>
-                  <Grid item xs={12} md={12}>
+                  <Grid item xs={12} md={6}>
                     <FormControl sx={{ minWidth: 250 }}>
                       <InputLabel>Select Delivery Person</InputLabel>
                       <Select

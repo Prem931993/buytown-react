@@ -40,7 +40,7 @@ function UserDetail() {
     firstname: '',
     lastname: '',
     email: '',
-    phone_no: '',
+    phone_no: '+91',
     password: '',
     address: '',
     gstin: '',
@@ -119,13 +119,23 @@ function UserDetail() {
             });
           }
 
+          // Parse address if it's a JSON string
+          let parsedAddress = userData.address || '';
+          try {
+            if (typeof parsedAddress === 'string') {
+              parsedAddress = JSON.parse(parsedAddress);
+            }
+          } catch {
+            // Keep as string if parsing fails
+          }
+
           setFormData({
             firstname: userData.firstname || '',
             lastname: userData.lastname || '',
             email: userData.email || '',
             phone_no: userData.phone_no || '',
             password: '', // Don't populate password for security reasons
-            address: userData.address || '',
+            address: parsedAddress,
             gstin: userData.gstin || '',
             profile_photo: userData.profile_photo || null,
             license: userData.license || null,
@@ -647,8 +657,14 @@ function UserDetail() {
                     fullWidth
                     label="Phone Number"
                     name="phone_no"
-                    value={formData.phone_no}
-                    onChange={handleInputChange}
+                    value={formData.phone_no.replace('+91', '')}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, ''); // Only allow numbers
+                      setFormData({
+                        ...formData,
+                        phone_no: '+91' + value,
+                      });
+                    }}
                     variant="outlined"
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -656,6 +672,16 @@ function UserDetail() {
                         minHeight: 56,
                       }
                     }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            +91
+                          </Typography>
+                        </InputAdornment>
+                      ),
+                    }}
+                    placeholder="Enter phone number"
                   />
                 </Grid>
 
@@ -711,8 +737,28 @@ function UserDetail() {
                     fullWidth
                     label="Address"
                     name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
+                    value={(() => {
+                      if (typeof formData.address === 'object' && formData.address !== null) {
+                        const addr = formData.address;
+                        return `${addr.street || ''}, ${addr.city || ''}, ${addr.state || ''}, ${addr.zip_code || ''}, ${addr.country || ''}`.replace(/, ,/g, ',').replace(/^,|,$/g, '').trim();
+                      }
+                      return formData.address || '';
+                    })()}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      try {
+                        const parsed = JSON.parse(value);
+                        setFormData({
+                          ...formData,
+                          address: parsed,
+                        });
+                      } catch {
+                        setFormData({
+                          ...formData,
+                          address: value,
+                        });
+                      }
+                    }}
                     variant="outlined"
                     multiline
                     rows={3}
@@ -722,6 +768,7 @@ function UserDetail() {
                         minHeight: 56,
                       }
                     }}
+                    placeholder="Enter address as text or JSON object"
                   />
                 </Grid>
                 <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -845,7 +892,7 @@ function UserDetail() {
                                       ? formData.profile_photo
                                       : (() => {
                                           // Construct base URL without /api/v1 for static files
-                                          const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
+                                          const baseURL = process.env.REACT_APP_API_BASE_URL || '';
                                           const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                           return `${baseWithoutApi}/uploads/${formData.profile_photo}`;
                                         })())
@@ -926,7 +973,7 @@ function UserDetail() {
                                     ? formData.license
                                     : (() => {
                                         // Construct base URL without /api/v1 for static files
-                                        const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
+                                        const baseURL = process.env.REACT_APP_API_BASE_URL || '';
                                         const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                         return `${baseWithoutApi}/uploads/${formData.license}`;
                                       })();
@@ -944,7 +991,7 @@ function UserDetail() {
                                           ? formData.license
                                           : (() => {
                                               // Construct base URL without /api/v1 for static files
-                                              const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api/v1';
+                                              const baseURL = process.env.REACT_APP_API_BASE_URL || '';
                                               const baseWithoutApi = baseURL.replace('/api/v1', '').replace('/api', '');
                                               return `${baseWithoutApi}/uploads/${formData.license}`;
                                             })())
