@@ -116,6 +116,7 @@ const GeneralSettings = () => {
     },
     primaryColor: '#000000',
     secondaryColor: '#ffffff',
+    textColor: '#000000',
     backgroundImage: '',
     minimumOrderValue: '',
     abandonedCartExpiryHours: '',
@@ -165,6 +166,7 @@ const GeneralSettings = () => {
           },
           primaryColor: data.primary_color || '#000000',
           secondaryColor: data.secondary_color || '#ffffff',
+          textColor: data.text_color || '#000000',
           backgroundImage: data.background_image || '',
           minimumOrderValue: data.minimum_order_value || '',
           abandonedCartExpiryHours: data.abandoned_cart_expiry_hours || '',
@@ -247,10 +249,7 @@ const GeneralSettings = () => {
   const handleSaveGeneral = async () => {
     try {
       setLoading(true);
-      const currentResponse = await generalSettingsService.getSettings();
-      const currentData = currentResponse.data || {};
       const payload = {
-        ...currentData,
         company_name: settings.companyName,
         company_details: settings.contactDetails,
         phone_number: settings.phoneNumber,
@@ -277,16 +276,13 @@ const GeneralSettings = () => {
     }
   };
 
-  const handleSaveColorManagement = async (backgroundImageOverride) => {
+  const handleSaveColorManagement = async () => {
     try {
       setLoading(true);
-      const currentResponse = await generalSettingsService.getSettings();
-      const currentData = currentResponse.data || {};
       const payload = {
-        ...currentData,
         primary_color: settings.primaryColor,
         secondary_color: settings.secondaryColor,
-        background_image: backgroundImageOverride !== undefined ? backgroundImageOverride : settings.backgroundImage,
+        text_color: settings.textColor,
       };
       const response = await generalSettingsService.updateSettings(payload);
       if (response.success) {
@@ -301,13 +297,29 @@ const GeneralSettings = () => {
     }
   };
 
+  const handleSaveBackgroundImage = async (backgroundImageOverride) => {
+    try {
+      setLoading(true);
+      const payload = {
+        background_image: backgroundImageOverride !== undefined ? backgroundImageOverride : settings.backgroundImage,
+      };
+      const response = await generalSettingsService.updateSettings(payload);
+      if (response.success) {
+        showSnackbar('Background image settings saved successfully!', 'success');
+      } else {
+        showSnackbar('Failed to save background image settings: ' + (response.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      showSnackbar('Failed to save background image settings: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveApplicationSettings = async () => {
     try {
       setLoading(true);
-      const currentResponse = await generalSettingsService.getSettings();
-      const currentData = currentResponse.data || {};
       const payload = {
-        ...currentData,
         minimum_order_value: settings.minimumOrderValue,
         abandoned_cart_expiry_hours: settings.abandonedCartExpiryHours,
         low_stock_quantity: settings.lowStockQuantity,
@@ -439,8 +451,8 @@ const GeneralSettings = () => {
       });
       showSnackbar('Background image uploaded successfully!', 'success');
       setBackgroundImageFile(null);
-      // Automatically save the color management settings after upload
-      await handleSaveColorManagement(filePath);
+      // Automatically save the background image settings after upload
+      await handleSaveBackgroundImage(filePath);
     } catch (error) {
       showSnackbar('Failed to upload background image: ' + error.message, 'error');
     } finally {
@@ -810,6 +822,49 @@ const GeneralSettings = () => {
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
+                    label="Text Color"
+                    value={settings.textColor}
+                    onChange={(e) => handleInputChange('textColor', e.target.value)}
+                    margin="normal"
+                    variant="outlined"
+                    type="color"
+                    inputProps={{
+                      style: {
+                        width: '200px',
+                        height: '56px',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                      }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveColorManagement}
+                  disabled={loading}
+                  size="large"
+                  startIcon={<SaveIcon />}
+                >
+                  Save Color Management Settings
+                </Button>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Background Image Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Background Image</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
                     fullWidth
                     label="Background Image URL"
                     value={settings.backgroundImage}
@@ -855,12 +910,12 @@ const GeneralSettings = () => {
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <Button
                   variant="contained"
-                  onClick={handleSaveColorManagement}
+                  onClick={handleSaveBackgroundImage}
                   disabled={loading}
                   size="large"
                   startIcon={<SaveIcon />}
                 >
-                  Save Color Management Settings
+                  Save Background Image Settings
                 </Button>
               </Box>
             </AccordionDetails>
