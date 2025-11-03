@@ -447,7 +447,19 @@ function ProductDetail() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{
+          position: 'sticky',
+          top: 64,
+          zIndex: 1100,
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(8px)',
+          padding: '16px 0',
+          borderBottom: '1px solid rgba(231, 190, 76, 0.3)',
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
           <Box>
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
               {isEditMode ? 'Edit Product' : 'Add New Product'}
@@ -518,7 +530,7 @@ function ProductDetail() {
                       label="Product Name"
                       name="name"
                       value={formData.name}
-                      onChange={handleInputChange}
+                      onChange={handleInputChange}  
                       required
                     />
                     <TextField
@@ -1102,7 +1114,6 @@ function ProductDetail() {
                       fullWidth
                       label="Original Price"
                       name="price"
-                      type="number"
                       value={formData.price}
                       onChange={handleInputChange}
                       required
@@ -1113,7 +1124,6 @@ function ProductDetail() {
                       fullWidth
                       label="Selling Price"
                       name="selling_price"
-                      type="number"
                       value={formData.selling_price}
                       onChange={handleInputChange}
                       InputProps={{ startAdornment: '₹' }}
@@ -1123,7 +1133,6 @@ function ProductDetail() {
                       fullWidth
                       label="Discount (%)"
                       name="discount"
-                      type="number"
                       value={formData.discount}
                       onChange={handleInputChange}
                       InputProps={{ endAdornment: '%' }}
@@ -1133,7 +1142,6 @@ function ProductDetail() {
                       fullWidth
                       label="GST (%)"
                       name="gst"
-                      type="number"
                       value={formData.gst}
                       onChange={handleInputChange}
                       InputProps={{ endAdornment: '%' }}
@@ -1151,7 +1159,6 @@ function ProductDetail() {
                       fullWidth
                       label="Stock Quantity"
                       name="stock"
-                      type="number"
                       value={formData.stock}
                       onChange={handleInputChange}
                       required
@@ -1161,7 +1168,6 @@ function ProductDetail() {
                       fullWidth
                       label="Minimum Order Quantity"
                       name="min_order_qty"
-                      type="number"
                       value={formData.min_order_qty}
                       onChange={handleInputChange}
                     />
@@ -1219,7 +1225,6 @@ function ProductDetail() {
                       fullWidth
                       label="Weight (kg)"
                       name="weight_kg"
-                      type="number"
                       value={formData.weight_kg}
                       onChange={handleInputChange}
                     />

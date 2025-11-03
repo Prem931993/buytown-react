@@ -73,7 +73,15 @@ function Products() {
 
   // Ref to track initial mount
   const isInitialMount = useRef(true);
-  
+
+  // Ref to track if state was restored from sessionStorage
+  const hasRestoredState = useRef(false);
+
+  // Ref to track if component is currently restoring state
+  const isRestoringState = useRef(false);
+
+  // Restore state from sessionStorage on component mount - moved to initial useEffect
+
   const fetchProducts = useCallback(async (isSearch = false, pageOverride = null) => {
     try {
       setLoading(true);
@@ -151,40 +159,139 @@ function Products() {
   }, [setProducts, setPagination, setSnackbar, setLoading]);
   
   useEffect(() => {
-    const fetchData = async () => {
+    // Restore state from sessionStorage on component mount
+    const savedState = sessionStorage.getItem('productsListState');
+    if (savedState) {
       try {
-        setLoading(true);
+        const parsedState = JSON.parse(savedState);
+        // Check if state is not too old (within last 30 minutes)
+        const isRecent = Date.now() - parsedState.timestamp < 30 * 60 * 1000;
 
-        // Fetch categories for dropdown
-        try {
-          const categoriesResponse = await adminService.categories.getForDropdown();
-          setCategories(categoriesResponse.categories || []);
-        } catch (error) {
-          console.error('Error fetching categories:', error);
-          // Fallback to mock data if API fails
-          setCategories([
-            { id: 1, name: 'Electronics' },
-            { id: 2, name: 'Audio' },
-            { id: 3, name: 'Wearables' },
-            { id: 4, name: 'Accessories' }
-          ]);
+        if (isRecent) {
+          // Update timestamp to extend validity
+          parsedState.timestamp = Date.now();
+          sessionStorage.setItem('productsListState', JSON.stringify(parsedState));
+
+          // Mark that state is being restored to prevent filter useEffect from running
+          hasRestoredState.current = true;
+
+          // Set state variables
+          setPagination(prev => ({
+            ...prev,
+            page: parsedState.page,
+            limit: parsedState.limit
+          }));
+          setSearchQuery(parsedState.searchQuery || '');
+          setFilters(parsedState.filters || {
+            category_ids: [],
+            in_stock: false,
+            has_discount: false
+          });
+
+          // Fetch products immediately with restored state
+          const fetchWithRestoredState = async () => {
+            isRestoringState.current = true;
+            try {
+              setLoading(true);
+
+              // Fetch categories for dropdown
+              try {
+                const categoriesResponse = await adminService.categories.getForDropdown();
+                setCategories(categoriesResponse.categories || []);
+              } catch (error) {
+                console.error('Error fetching categories:', error);
+                // Fallback to mock data if API fails
+                setCategories([
+                  { id: 1, name: 'Electronics' },
+                  { id: 2, name: 'Audio' },
+                  { id: 3, name: 'Wearables' },
+                  { id: 4, name: 'Accessories' }
+                ]);
+              }
+
+              // Prepare query parameters with restored values
+              const params = {
+                page: parsedState.page,
+                limit: parsedState.limit,
+                search: parsedState.searchQuery || undefined,
+                category_id: (parsedState.filters?.category_ids?.length > 0) ? parsedState.filters.category_ids.join(',') : undefined,
+              };
+
+              // Remove undefined parameters
+              Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+
+              // Fetch products from API
+              const response = await adminApiClient.get('/products', { params });
+
+              // Set products and pagination data
+              setProducts(response.data.products || []);
+              setPagination(prevPagination => ({
+                ...prevPagination,
+                page: response.data.pagination?.page || prevPagination.page,
+                total: response.data.pagination?.totalCount || 0,
+                totalPages: response.data.pagination?.totalPages || 0,
+                hasNext: response.data.pagination?.hasNext || false,
+                hasPrev: response.data.pagination?.hasPrev || false,
+              }));
+            } catch (error) {
+              console.error('Error fetching products with restored state:', error);
+              setSnackbar({
+                open: true,
+                message: 'Failed to load products',
+                severity: 'error',
+              });
+            } finally {
+              setLoading(false);
+              isRestoringState.current = false;
+            }
+          };
+
+          fetchWithRestoredState();
+        } else {
+          // State is too old, remove it
+          sessionStorage.removeItem('productsListState');
         }
-
-        // Fetch products with filters and pagination
-        await fetchInitialProducts();
       } catch (error) {
-        console.error('Error fetching initial data:', error);
-        setSnackbar({
-          open: true,
-          message: 'Failed to load initial data',
-          severity: 'error',
-        });
-      } finally {
-        setLoading(false);
+        console.error('Error restoring products list state:', error);
+        sessionStorage.removeItem('productsListState');
       }
-    };
+    } else {
+      // No saved state, do normal initial fetch
+      const fetchData = async () => {
+        try {
+          setLoading(true);
 
-    fetchData();
+          // Fetch categories for dropdown
+          try {
+            const categoriesResponse = await adminService.categories.getForDropdown();
+            setCategories(categoriesResponse.categories || []);
+          } catch (error) {
+            console.error('Error fetching categories:', error);
+            // Fallback to mock data if API fails
+            setCategories([
+              { id: 1, name: 'Electronics' },
+              { id: 2, name: 'Audio' },
+              { id: 3, name: 'Wearables' },
+              { id: 4, name: 'Accessories' }
+            ]);
+          }
+
+          // Fetch products with filters and pagination
+          await fetchInitialProducts();
+        } catch (error) {
+          console.error('Error fetching initial data:', error);
+          setSnackbar({
+            open: true,
+            message: 'Failed to load initial data',
+            severity: 'error',
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }
   }, [fetchInitialProducts]);
 
   // Auto-fetch products when category or status filters change
@@ -192,6 +299,17 @@ function Products() {
     // Skip the initial mount
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      return;
+    }
+
+    // Skip if state was just restored from sessionStorage
+    if (hasRestoredState.current) {
+      hasRestoredState.current = false;
+      return;
+    }
+
+    // Skip if currently restoring state
+    if (isRestoringState.current) {
       return;
     }
 
@@ -247,6 +365,16 @@ function Products() {
   };
   
   const handleEditProduct = (product) => {
+    // Store current state before navigating to edit
+    const currentState = {
+      page: pagination.page,
+      limit: pagination.limit,
+      searchQuery,
+      filters,
+      timestamp: Date.now() // Add timestamp to avoid stale data
+    };
+    sessionStorage.setItem('productsListState', JSON.stringify(currentState));
+
     // If this is a parent product, navigate to the parent product form
     if (product.product_type === 'parent') {
       navigate(`/parent-products/${product.id}`);
@@ -526,10 +654,29 @@ function Products() {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
-                      <Typography variant="body1" sx={{ py: 5 }}>
-                        No products found. Try adjusting your search or filters.
-                      </Typography>
+                    <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <AddIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                          No Products Found
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                          Get started by adding your first product
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={handleAddProduct}
+                          sx={{
+                            background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                            },
+                          }}
+                        >
+                          Add First Product
+                        </Button>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -551,7 +698,11 @@ function Products() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}
+                        style={{ cursor: 'pointer' }} 
+                        onClick={() => {
+                            handleEditProduct(product);
+                          }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {product.name}
                           </Typography>
