@@ -217,6 +217,14 @@ export const adminService = {
       const response = await adminApiClient.get('/products', { params });
       return response.data;
     },
+    searchForOrder: async (params = {}) => {
+      const response = await adminApiClient.get('/products/search-for-order', { params });
+      return response.data;
+    },
+    getAvailableForOrder: async (orderId, params = {}) => {
+      const response = await adminApiClient.get(`/products/available-for-order/${orderId}`, { params });
+      return response.data;
+    },
     getById: async (id) => {
       const response = await adminApiClient.get(`/products/${id}`);
       return response.data;
@@ -714,6 +722,19 @@ export const adminService = {
         vehicle_id: vehicleId,
         delivery_distance: deliveryDistance
       });
+      return response.data;
+    },
+    // Order Item Management
+    addOrderItem: async (orderId, itemData) => {
+      const response = await adminApiClient.post(`/orders/${orderId}/items`, itemData);
+      return response.data;
+    },
+    updateOrderItem: async (orderId, itemId, updateData) => {
+      const response = await adminApiClient.put(`/orders/${orderId}/items/${itemId}`, updateData);
+      return response.data;
+    },
+    removeOrderItem: async (orderId, itemId) => {
+      const response = await adminApiClient.delete(`/orders/${orderId}/items/${itemId}`);
       return response.data;
     },
   },
