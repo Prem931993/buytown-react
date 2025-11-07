@@ -29,7 +29,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Checkbox
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,6 +39,7 @@ import {
   Search as SearchIcon,
   CloudUpload as CloudUploadIcon,
   Refresh as RefreshIcon,
+  DeleteSweep as DeleteSweepIcon,
 } from '@mui/icons-material';
 import { adminApiClient } from '../services/adminService';
 import adminService from '../services/adminService';
@@ -54,6 +56,8 @@ function Products() {
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState({ id: null, name: '' });
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [imageUploadModalOpen, setImageUploadModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -421,6 +425,59 @@ function Products() {
     }
   };
 
+  // Bulk delete handlers
+  const handleSelectProduct = (productId) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.length === products.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(products.map(p => p.id));
+    }
+  };
+
+  const handleBulkDeleteConfirmation = () => {
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      // Bulk delete products from API
+      await adminApiClient.delete('/products', {
+        data: { productIds: selectedProducts }
+      });
+
+      // Update the products list
+      const updatedProducts = products.filter((p) => !selectedProducts.includes(p.id));
+      setProducts(updatedProducts);
+      setSelectedProducts([]);
+      setSnackbar({
+        open: true,
+        message: `${selectedProducts.length} products deleted successfully`,
+        severity: 'success',
+      });
+      setBulkDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error bulk deleting products:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete selected products',
+        severity: 'error',
+      });
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
   // Add Delete Confirmation Dialog JSX here
 
   const handleCloseSnackbar = () => {
@@ -468,6 +525,24 @@ function Products() {
           >
             Add Parent Product
           </Button>
+          {selectedProducts.length > 0 && (
+            <Button
+              variant="outlined"
+              startIcon={<DeleteSweepIcon />}
+              onClick={handleBulkDeleteConfirmation}
+              sx={{
+                mr: 2,
+                borderColor: '#ef4444',
+                color: '#ef4444',
+                '&:hover': {
+                  borderColor: '#dc2626',
+                  backgroundColor: '#fef2f2',
+                },
+              }}
+            >
+              Delete Selected ({selectedProducts.length})
+            </Button>
+          )}
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -640,6 +715,13 @@ function Products() {
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={selectedProducts.length > 0 && selectedProducts.length < products.length}
+                      checked={products.length > 0 && selectedProducts.length === products.length}
+                      onChange={handleSelectAll}
+                    />
+                  </TableCell>
                   <TableCell>ID</TableCell>
                   <TableCell>Image</TableCell>
                   <TableCell>Name</TableCell>
@@ -654,7 +736,7 @@ function Products() {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 8 }}>
                       <Box sx={{ textAlign: 'center' }}>
                         <AddIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                         <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -682,6 +764,12 @@ function Products() {
                 ) : (
                   products.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => handleSelectProduct(product.id)}
+                        />
+                      </TableCell>
                       <TableCell>{product.id}</TableCell>
                       <TableCell>
                         <img
@@ -819,6 +907,30 @@ function Products() {
           </Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={bulkDeleteDialogOpen}
+        onClose={handleBulkDeleteCancel}
+        aria-labelledby="bulk-delete-dialog-title"
+        aria-describedby="bulk-delete-dialog-description"
+      >
+        <DialogTitle id="bulk-delete-dialog-title">
+          Confirm Bulk Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="bulk-delete-dialog-description">
+            Are you sure you want to delete {selectedProducts.length} selected products? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleBulkDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleBulkDeleteConfirm} color="error" variant="contained">
+            Delete All
           </Button>
         </DialogActions>
       </Dialog>
