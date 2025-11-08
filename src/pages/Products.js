@@ -84,6 +84,18 @@ function Products() {
   // Ref to track if component is currently restoring state
   const isRestoringState = useRef(false);
 
+  // Function to save current state to sessionStorage
+  const saveCurrentState = useCallback(() => {
+    const currentState = {
+      page: pagination.page,
+      limit: pagination.limit,
+      searchQuery,
+      filters,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('productsListState', JSON.stringify(currentState));
+  }, [pagination.page, pagination.limit, searchQuery, filters]);
+
   // Restore state from sessionStorage on component mount - moved to initial useEffect
 
   const fetchProducts = useCallback(async (isSearch = false, pageOverride = null) => {
@@ -361,6 +373,27 @@ function Products() {
     applyFilters();
   }, [filters.category_ids, filters.in_stock, filters.has_discount, pagination.limit, searchQuery]);
 
+  // Save state to sessionStorage whenever state changes (but not during initial load or restoration)
+  useEffect(() => {
+    // Skip if this is the initial mount
+    if (isInitialMount.current) {
+      return;
+    }
+
+    // Skip if state was just restored from sessionStorage
+    if (hasRestoredState.current) {
+      return;
+    }
+
+    // Skip if currently restoring state
+    if (isRestoringState.current) {
+      return;
+    }
+
+    // Save current state
+    saveCurrentState();
+  }, [pagination.page, pagination.limit, searchQuery, filters.category_ids, filters.in_stock, filters.has_discount, saveCurrentState]);
+
   // Navigation to detail page is now handled with react-router
   const navigate = useNavigate();
   
@@ -501,6 +534,8 @@ function Products() {
     // Refresh the entire products list to ensure consistency
     fetchProducts();
   };
+
+  const isNoProductsAtAll = products.length === 0 && searchQuery === '' && filters.category_ids.length === 0 && !filters.in_stock && !filters.has_discount;
 
   return (
     <Box>
@@ -660,7 +695,18 @@ function Products() {
                   }}
                 >
                   {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
+                    <MenuItem
+                      key={category.id}
+                      value={category.id}
+                      sx={{
+                        '&.Mui-selected': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                          },
+                        },
+                      }}
+                    >
                       {category.name}
                     </MenuItem>
                   ))}
@@ -740,24 +786,26 @@ function Products() {
                       <Box sx={{ textAlign: 'center' }}>
                         <AddIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                         <Typography variant="h6" color="text.secondary" gutterBottom>
-                          No Products Found
+                          {isNoProductsAtAll ? 'No Products Found' : 'No Products Match Your Search'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                          Get started by adding your first product
+                          {isNoProductsAtAll ? 'Get started by adding your first product' : 'Try adjusting your search or filters'}
                         </Typography>
-                        <Button
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddProduct}
-                          sx={{
-                            background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
-                            },
-                          }}
-                        >
-                          Add First Product
-                        </Button>
+                        {isNoProductsAtAll && (
+                          <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={handleAddProduct}
+                            sx={{
+                              background: 'linear-gradient(135deg, #E7BE4C 0%, #C69C4B 100%)',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #C69C4B 0%, #E7BE4C 100%)',
+                              },
+                            }}
+                          >
+                            Add First Product
+                          </Button>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -787,7 +835,7 @@ function Products() {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}
-                        style={{ cursor: 'pointer' }} 
+                        style={{ cursor: 'pointer' }}
                         onClick={() => {
                             handleEditProduct(product);
                           }}>
