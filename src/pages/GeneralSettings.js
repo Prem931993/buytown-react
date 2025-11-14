@@ -22,6 +22,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -121,6 +123,7 @@ const GeneralSettings = () => {
     minimumOrderValue: '',
     abandonedCartExpiryHours: '',
     lowStockQuantity: '',
+    maintenanceMode: false,
   });
   const [logos, setLogos] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -171,6 +174,7 @@ const GeneralSettings = () => {
           minimumOrderValue: data.minimum_order_value || '',
           abandonedCartExpiryHours: data.abandoned_cart_expiry_hours || '',
           lowStockQuantity: data.low_stock_quantity || '',
+          maintenanceMode: data.maintenance_mode || false,
         });
         // Store selected categories IDs for later processing
         if (data.selected_categories && Array.isArray(data.selected_categories)) {
@@ -332,6 +336,25 @@ const GeneralSettings = () => {
       }
     } catch (error) {
       showSnackbar('Failed to save application settings: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveMaintenanceMode = async () => {
+    try {
+      setLoading(true);
+      const payload = {
+        maintenance_mode: settings.maintenanceMode,
+      };
+      const response = await generalSettingsService.updateSettings(payload);
+      if (response.success) {
+        showSnackbar('Maintenance mode settings saved successfully!', 'success');
+      } else {
+        showSnackbar('Failed to save maintenance mode settings: ' + (response.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      showSnackbar('Failed to save maintenance mode settings: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -977,6 +1000,46 @@ const GeneralSettings = () => {
                   startIcon={<SaveIcon />}
                 >
                   Save Application Settings
+                </Button>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Maintenance Mode Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Maintenance Mode</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={settings.maintenanceMode}
+                        onChange={(e) => handleInputChange('maintenanceMode', e.target.checked)}
+                        color="primary"
+                      />
+                    }
+                    label="Enable Maintenance Mode"
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    When enabled, the application will display a maintenance page to users.
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveMaintenanceMode}
+                  disabled={loading}
+                  size="large"
+                  startIcon={<SaveIcon />}
+                >
+                  Save Maintenance Mode Settings
                 </Button>
               </Box>
             </AccordionDetails>
